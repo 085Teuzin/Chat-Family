@@ -152,7 +152,7 @@
 
     .msg {
       max-width: 75%;
-      padding: 10px 14px;
+      padding: 10px 14px 22px 14px;
       border-radius: 18px;
       font-size: 0.95rem;
       line-height: 1.4;
@@ -168,11 +168,19 @@
       font-weight: 600;
       margin-bottom: 3px;
       display: block;
-      color: #BB86FC;
     }
 
-    .light-theme .msg .sender {
-      color: #6200EE;
+    .msg .timestamp {
+      position: absolute;
+      bottom: 4px;
+      right: 10px;
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      opacity: 0.8;
+    }
+
+    .msg.sent .timestamp {
+      color: rgba(255, 255, 255, 0.8);
     }
 
     .msg.received {
@@ -263,19 +271,26 @@
     }
 
     .btn-download {
-      align-self: flex-start;
+      align-self: center;
       background: rgba(255, 255, 255, 0.15);
       color: inherit;
       border: none;
-      padding: 6px 12px;
+      padding: 6px 16px;
       border-radius: 12px;
       font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 4px;
       text-decoration: none;
+      margin-top: 4px;
+      width: fit-content;
+    }
+
+    .msg.received .btn-download {
+      background: var(--surface-light);
     }
 
     .btn-download svg {
@@ -368,6 +383,25 @@
     #btn-send {
       background-color: var(--primary);
       color: white;
+      display: none;
+    }
+
+    #btn-mic {
+      background-color: #E53935;
+      color: white;
+      display: flex;
+      touch-action: none;
+    }
+
+    #btn-mic.recording {
+      animation: pulse 1.2s infinite;
+      background-color: #D32F2F;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.5); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(211, 47, 47, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
     }
 
     .modal {
@@ -457,7 +491,7 @@
       color: white;
     }
 
-    .modal-input {
+    .modal-input, .modal-select {
       width: 100%;
       padding: 14px;
       border: 1px solid var(--border);
@@ -466,6 +500,11 @@
       color: var(--text);
       font-size: 1rem;
       outline: none;
+    }
+
+    .modal-select {
+      appearance: none;
+      -webkit-appearance: none;
     }
 
     .btn-save {
@@ -641,13 +680,23 @@
     <div id="login-screen" style="display: none;">
       <h1>Chat Family</h1>
       <input type="text" id="username" class="input-field" placeholder="Seu nome ou apelido" maxlength="15" autocomplete="off">
+      <select id="user-color" class="input-field" style="padding: 12px;">
+        <option value="#FFFFFF">Branco</option>
+        <option value="#000000">Preto</option>
+        <option value="#9C27B0">Roxo</option>
+        <option value="#4CAF50">Verde</option>
+        <option value="#2196F3">Azul</option>
+        <option value="#FFEB3B">Amarelo</option>
+        <option value="#FF9800">Laranja</option>
+        <option value="#E91E63">Rosa</option>
+      </select>
       <button id="btn-enter" class="btn-main">Entrar no Chat</button>
     </div>
 
     <div id="chat-screen">
       <header>
         <button class="action-btn" id="btn-config">
-          <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.81,11.69,4.81,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.81,11.69,4.81,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
         </button>
         <div class="title-text" id="group-title">Família</div>
       </header>
@@ -666,6 +715,9 @@
         <input type="text" id="msg-input" placeholder="Digite uma mensagem..." autocomplete="off">
         <button class="action-btn" id="btn-send">
           <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+        <button class="action-btn" id="btn-mic">
+          <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
         </button>
       </div>
     </div>
@@ -687,6 +739,19 @@
       <div class="config-group">
         <label>Meu Nome</label>
         <input type="text" id="settings-username" class="modal-input" maxlength="15">
+      </div>
+      <div class="config-group">
+        <label>Cor do Nome</label>
+        <select id="settings-user-color" class="modal-select">
+          <option value="#FFFFFF">Branco</option>
+          <option value="#000000">Preto</option>
+          <option value="#9C27B0">Roxo</option>
+          <option value="#4CAF50">Verde</option>
+          <option value="#2196F3">Azul</option>
+          <option value="#FFEB3B">Amarelo</option>
+          <option value="#FF9800">Laranja</option>
+          <option value="#E91E63">Rosa</option>
+        </select>
       </div>
       <div class="config-group">
         <label>Nome do Grupo</label>
@@ -719,7 +784,7 @@
 
   <div class="context-menu" id="message-context-menu">
     <div class="context-item" id="ctx-reply">Responder</div>
-    <div class="context-item" id="ctx-edit">Editar Mensagem</div>
+    <div class="context-item" id="ctx-edit">Editar SMS</div>
     <div class="context-item delete" id="ctx-delete">Apagar</div>
   </div>
 
@@ -744,9 +809,11 @@
     const lockScreen = document.getElementById("lock-screen");
     const chatScreen = document.getElementById("chat-screen");
     const usernameInput = document.getElementById("username");
+    const userColorSelect = document.getElementById("user-color");
     const btnEnter = document.getElementById("btn-enter");
     const msgInput = document.getElementById("msg-input");
     const btnSend = document.getElementById("btn-send");
+    const btnMic = document.getElementById("btn-mic");
     const messagesContainer = document.getElementById("messages");
     const btnConfig = document.getElementById("btn-config");
     const configModal = document.getElementById("config-modal");
@@ -754,6 +821,7 @@
     const groupTitle = document.getElementById("group-title");
     
     const settingsUsername = document.getElementById("settings-username");
+    const settingsUserColor = document.getElementById("settings-user-color");
     const settingsGroupname = document.getElementById("settings-groupname");
     const chkLock = document.getElementById("chk-lock");
     const btnSaveSettings = document.getElementById("btn-save-settings");
@@ -777,6 +845,7 @@
     const btnPinConfirm = document.getElementById("btn-pin-confirm");
 
     let currentUser = localStorage.getItem("chat_family_user") || "";
+    let currentUserColor = localStorage.getItem("chat_family_color") || "#FFFFFF";
     let isLockEnabled = localStorage.getItem("chat_family_lock_enabled") === "true";
     let activeTheme = localStorage.getItem("chat_family_theme") || "dark";
     let selectedMessageId = null;
@@ -785,6 +854,8 @@
     let isEditing = false;
     let editMessageId = null;
     let replyMessageId = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
     let deletedMessagesLocal = JSON.parse(localStorage.getItem("chat_family_deleted_local") || "[]");
 
     if (activeTheme === "light") {
@@ -803,6 +874,81 @@
     } else {
       loginScreen.style.display = "flex";
     }
+
+    msgInput.addEventListener("input", () => {
+      if (msgInput.value.trim().length > 0) {
+        btnSend.style.display = "flex";
+        btnMic.style.display = "none";
+      } else {
+        btnSend.style.display = "none";
+        btnMic.style.display = "flex";
+      }
+    });
+
+    async function startAudioRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunks.push(e.data);
+        };
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64Data = reader.result;
+            const messagesRef = ref(db, "messages");
+            const newMsgRef = push(messagesRef);
+            const msgPayload = {
+              sender: currentUser,
+              senderColor: currentUserColor,
+              text: "Áudio",
+              fileData: base64Data,
+              fileName: "audio.webm",
+              type: "audio",
+              timestamp: Date.now()
+            };
+            if (replyMessageId) {
+              msgPayload.replyTo = replyMessageId;
+              msgPayload.replyText = selectedMessageElement.dataset.text;
+              msgPayload.replySender = selectedMessageElement.dataset.sender;
+              replyMessageId = null;
+              replyBar.style.display = "none";
+            }
+            set(newMsgRef, msgPayload);
+          };
+          reader.readAsDataURL(audioBlob);
+          stream.getTracks().forEach(track => track.stop());
+        };
+        mediaRecorder.start();
+        btnMic.classList.add("recording");
+      } catch (err) {
+        alert("Erro ao acessar microfone nativo.");
+      }
+    }
+
+    function stopAudioRecording() {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        btnMic.classList.remove("recording");
+      }
+    }
+
+    btnMic.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      startAudioRecording();
+    });
+    btnMic.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      stopAudioRecording();
+    });
+    btnMic.addEventListener("mousedown", () => {
+      startAudioRecording();
+    });
+    btnMic.addEventListener("mouseup", () => {
+      stopAudioRecording();
+    });
 
     btnUnlock.addEventListener("click", () => {
       const pin = lockPin.value;
@@ -827,9 +973,12 @@
 
     btnEnter.addEventListener("click", () => {
       const name = usernameInput.value.trim();
+      const color = userColorSelect.value;
       if (name) {
         currentUser = name;
+        currentUserColor = color;
         localStorage.setItem("chat_family_user", name);
+        localStorage.setItem("chat_family_color", color);
         loginScreen.style.display = "none";
         chatScreen.style.display = "flex";
         initChat();
@@ -846,6 +995,7 @@
 
     btnConfig.addEventListener("click", () => {
       settingsUsername.value = currentUser;
+      settingsUserColor.value = currentUserColor;
       settingsGroupname.value = groupTitle.textContent;
       chkLock.checked = localStorage.getItem("chat_family_lock_enabled") === "true";
       configModal.style.display = "flex";
@@ -904,7 +1054,13 @@
 
     btnSaveSettings.addEventListener("click", () => {
       const newName = settingsUsername.value.trim();
+      const newColor = settingsUserColor.value;
       const newGroup = settingsGroupname.value.trim();
+
+      if (newColor && newColor !== currentUserColor) {
+        currentUserColor = newColor;
+        localStorage.setItem("chat_family_color", newColor);
+      }
 
       if (newName && newName !== currentUser) {
         const oldName = currentUser;
@@ -972,6 +1128,7 @@
         const newMsgRef = push(messagesRef);
         const msgPayload = {
           sender: currentUser,
+          senderColor: currentUserColor,
           text: file.name,
           fileData: base64Data,
           fileName: file.name,
@@ -1012,6 +1169,7 @@
           const newMsgRef = push(messagesRef);
           const msgPayload = {
             sender: currentUser,
+            senderColor: currentUserColor,
             text: text,
             type: type,
             timestamp: Date.now()
@@ -1032,6 +1190,8 @@
         if (text) {
           sendMessage(text, "text");
           msgInput.value = "";
+          btnSend.style.display = "none";
+          btnMic.style.display = "flex";
         }
       });
 
@@ -1050,6 +1210,14 @@
           });
         }
       });
+    }
+
+    function formatTime(timestamp) {
+      if (!timestamp) return "";
+      const date = new Date(timestamp);
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      return `${hours}:${minutes}`;
     }
 
     function renderMessage(id, data) {
@@ -1074,12 +1242,16 @@
       msgDiv.dataset.sender = data.sender;
       msgDiv.dataset.text = data.text;
       
-      if (!isMe) {
-        const senderSpan = document.createElement("span");
-        senderSpan.classList.add("sender");
-        senderSpan.textContent = data.sender;
-        msgDiv.appendChild(senderSpan);
-      }
+      const senderSpan = document.createElement("span");
+      senderSpan.classList.add("sender");
+      senderSpan.textContent = isMe ? "Você" : data.sender;
+      senderSpan.style.color = data.senderColor || (isMe ? "#BB86FC" : "#6200EE");
+      msgDiv.appendChild(senderSpan);
+
+      const timeSpan = document.createElement("span");
+      timeSpan.classList.add("timestamp");
+      timeSpan.textContent = formatTime(data.timestamp);
+      msgDiv.appendChild(timeSpan);
 
       if (data.replyTo) {
         const replyBlock = document.createElement("div");
@@ -1166,18 +1338,11 @@
         audioEl.addEventListener("pause", (e) => e.stopPropagation());
         audioContainer.appendChild(audioEl);
 
-        const dlBtn = document.createElement("a");
-        dlBtn.classList.add("btn-download");
-        dlBtn.href = data.fileData;
-        dlBtn.download = data.fileName;
-        dlBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg> Baixar Áudio`;
-        dlBtn.addEventListener("click", (e) => e.stopPropagation());
-        audioContainer.appendChild(dlBtn);
-
         msgDiv.appendChild(audioContainer);
       } else {
-        const textNode = document.createTextNode(data.text);
-        msgDiv.appendChild(textNode);
+        const textContainer = document.createElement("div");
+        textContainer.appendChild(document.createTextNode(data.text));
+        msgDiv.appendChild(textContainer);
       }
 
       msgDiv.addEventListener("touchstart", (e) => handlePressStart(e, msgDiv));
@@ -1251,8 +1416,10 @@
       isEditing = true;
       editMessageId = selectedMessageId;
       msgInput.value = selectedMessageElement.dataset.text;
-      msgInput.placeholder = "Editando mensagem...";
+      msgInput.placeholder = "Editando SMS...";
       msgInput.focus();
+      btnSend.style.display = "flex";
+      btnMic.style.display = "none";
     });
 
     document.getElementById("ctx-delete").addEventListener("click", (e) => {
