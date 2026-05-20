@@ -15,10 +15,11 @@
     .btn-main { width: 100%; max-width: 320px; padding: 14px; border: none; border-radius: 25px; background: linear-gradient(90deg, #7C4DFF, #6200EE); color: white; font-size: 1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
     #chat-screen { display: none; flex-direction: column; flex: 1; height: 100%; }
     header { background-color: var(--surface); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
-    header .title-text { font-weight: 600; font-size: 1.1rem; }
+    header .title-text { font-weight: 600; font-size: 1.1rem; outline: none; padding: 4px 8px; border-radius: 8px; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    header .title-text:focus { background: rgba(255, 255, 255, 0.05); }
     .avatar-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); cursor: pointer; border: 2px solid var(--border); object-fit: cover; }
     #messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
-    .msg { max-width: 75%; padding: 8px 12px 20px 12px; border-radius: 16px; font-size: 0.95rem; line-height: 1.4; position: relative; word-wrap: break-word; }
+    .msg { max-width: 75%; padding: 8px 12px 20px 12px; border-radius: 16px; font-size: 0.95rem; line-height: 1.4; position: relative; word-wrap: break-word; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
     .msg .sender { font-size: 0.75rem; font-weight: 600; margin-bottom: 2px; color: #BB86FC !important; display: block; }
     .msg .timestamp { position: absolute; bottom: 4px; right: 10px; font-size: 0.65rem; color: var(--text-dim); }
     .msg.received { background-color: var(--surface); align-self: flex-start; border-bottom-left-radius: 4px; }
@@ -29,7 +30,7 @@
     .file-message { display: flex; flex-direction: column; gap: 6px; min-width: 160px; }
     .img-preview { width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; }
     .btn-download { background: rgba(255, 255, 255, 0.1); color: inherit; border: none; padding: 6px; border-radius: 8px; font-size: 0.75rem; text-align: center; text-decoration: none; display: block; margin-top: 4px; }
-    audio { width: 100%; height: 30px; margin-top: 4px; }
+    audio { width: 100%; height: 40px; margin-top: 4px; display: block; }
     .input-area { display: flex; padding: 12px; background-color: var(--surface); border-top: 1px solid var(--border); align-items: center; gap: 8px; }
     .input-area input[type="text"] { flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 20px; outline: none; font-size: 1rem; background-color: var(--bg); color: var(--text); }
     .action-btn { background: none; border: none; width: 38px; height: 38px; color: var(--text); display: flex; justify-content: center; align-items: center; cursor: pointer; }
@@ -64,14 +65,14 @@
       <h1>Chat Family</h1>
       <input type="text" id="username" class="input-field" placeholder="Seu nome" maxlength="15" autocomplete="off">
       <button id="btn-google-login" class="btn-main">
-        <svg style="width:18px; height:18px; fill:currentColor" viewBox="0 0 24 24"><path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 6.033 1 1 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.997 0-.746-.08-1.32-.176-1.883H12.24z"/></svg>
+        <svg style="width:18px; height:18px; fill:currentColor" viewBox="0 0 24 24"><path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.997 0-.746-.08-1.32-.176-1.883H12.24z"/></svg>
         Entrar com Google
       </button>
     </div>
 
     <div id="chat-screen">
       <header>
-        <div class="title-text">Família</div>
+        <div class="title-text" id="group-title" contenteditable="true" spellcheck="false">Família</div>
         <img src="" id="btn-profile" class="avatar-btn" alt="Perfil" style="display: none;">
       </header>
       
@@ -150,6 +151,7 @@
     const btnSend = document.getElementById("btn-send");
     const btnMic = document.getElementById("btn-mic");
     const messagesContainer = document.getElementById("messages");
+    const groupTitle = document.getElementById("group-title");
     
     const btnProfile = document.getElementById("btn-profile");
     const profileModal = document.getElementById("profile-modal");
@@ -276,7 +278,7 @@
       } else {
         alert("Insira apenas números.");
         chkLock.checked = false;
-        pinModal.style.display = "none";
+        pinModal.style.none = "none";
       }
     });
 
@@ -317,21 +319,37 @@
       reader.readAsDataURL(file);
     });
 
+    function getSupportedMimeType() {
+      const types = ["audio/ogg;codecs=opus", "audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/wav"];
+      for (const type of types) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          return type;
+        }
+      }
+      return "";
+    }
+
     async function startAudioRecording() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
+        const options = {};
+        const mimeType = getSupportedMimeType();
+        if (mimeType) {
+          options.mimeType = mimeType;
+        }
+        
+        mediaRecorder = new MediaRecorder(stream, options);
         audioChunks = [];
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
         mediaRecorder.onstop = () => {
-          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/ogg' });
           const reader = new FileReader();
           reader.onloadend = () => {
             push(ref(db, "messages"), {
               sender: customDisplayName,
               text: "Áudio",
               fileData: reader.result,
-              fileName: "audio.webm",
+              fileName: "audio.ogg",
               type: "audio",
               timestamp: Date.now()
             });
@@ -360,6 +378,29 @@
 
     function initChat() {
       const messagesRef = ref(db, "messages");
+      const nameRef = ref(db, "groupName");
+
+      onValue(nameRef, (snapshot) => {
+        const name = snapshot.val();
+        if (name) {
+          groupTitle.textContent = name;
+        }
+      });
+
+      function saveGroupName() {
+        const newName = groupTitle.textContent.trim();
+        if (newName) {
+          set(nameRef, newName);
+        }
+      }
+
+      groupTitle.addEventListener("blur", saveGroupName);
+      groupTitle.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          groupTitle.blur();
+        }
+      });
 
       btnSend.onclick = () => {
         const text = msgInput.value.trim();
@@ -432,6 +473,7 @@
         const box = document.createElement("div");
         const au = document.createElement("audio");
         au.controls = true;
+        au.preload = "auto";
         au.src = data.fileData;
         box.appendChild(au);
         msgDiv.appendChild(box);
