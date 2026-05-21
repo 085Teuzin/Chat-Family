@@ -9,7 +9,6 @@
         import { 
             getAuth, 
             signInWithRedirect, 
-            getRedirectResult, 
             onAuthStateChanged, 
             GoogleAuthProvider,
             signOut 
@@ -47,7 +46,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        window.firebaseCtx = { auth, db, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, orderBy, query, deleteDoc, getDocs, writeBatch, serverTimestamp, deleteField };
+        window.firebaseCtx = { auth, db, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut, doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, orderBy, query, deleteDoc, getDocs, writeBatch, serverTimestamp, deleteField };
     </script>
 
     <style>
@@ -341,7 +340,7 @@
             
             <div id="adm-controls" style="display: none; margin-top: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
                 <h4 style="margin-bottom: 10px; color: var(--primary);">Painel do Administrador</h4>
-                <input type="text" id="new-room-name" placeholder="Mudar nome da sala">
+                <input type="text" id="new-room-name" placeholder="Mudar nome visual da sala">
                 <button id="btn-rename-room" class="btn-secondary">Salvar Novo Nome</button>
                 <button id="btn-clear-chat" class="btn-danger">Limpar Toda a Conversa</button>
             </div>
@@ -361,7 +360,7 @@
 
         function initApp() {
             const { 
-                auth, db, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut,
+                auth, db, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut,
                 doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, orderBy, query, deleteDoc, getDocs, writeBatch, serverTimestamp, deleteField
             } = window.firebaseCtx;
 
@@ -372,6 +371,7 @@
             let replyMessageData = null; 
             let unsubscribeMessages = null;
             let unsubscribeRoom = null;
+            let authProcessed = false;
 
             const screens = {
                 login: document.getElementById('screen-login'),
@@ -401,8 +401,15 @@
             }
 
             async function processUserLogin(user) {
+                if (authProcessed) {
+                    console.log("Fluxo de login já processado nesta instância. Ignorando duplicata.");
+                    return;
+                }
+                authProcessed = true;
+                console.log("Iniciando validação de usuário:", user.uid);
+
                 currentUser = user;
-                let finalName = sessionStorage.getItem('pending_display_name') || localStorage.getItem('chat_display_name');
+                let finalName = localStorage.getItem('pending_display_name') || localStorage.getItem('chat_display_name');
 
                 if (!finalName) {
                     try {
@@ -411,7 +418,7 @@
                             finalName = userDoc.data().displayName;
                         }
                     } catch (e) {
-                        console.error(e);
+                        console.error("Erro ao buscar dados do usuário no Firestore:", e);
                     }
                 }
 
@@ -421,28 +428,38 @@
 
                 if (finalName) {
                     localStorage.setItem('chat_display_name', finalName);
-                    sessionStorage.removeItem('pending_display_name');
+                    localStorage.removeItem('pending_display_name');
                     
-                    await setDoc(doc(db, 'users', user.uid), {
-                        displayName: finalName,
-                        email: user.email || '',
-                        photoURL: user.photoURL || ''
-                    }, { merge: true });
+                    try {
+                        await setDoc(doc(db, 'users', user.uid), {
+                            displayName: finalName,
+                            email: user.email || '',
+                            photoURL: user.photoURL || ''
+                        }, { merge: true });
+                    } catch (e) {
+                        console.error("Erro ao atualizar base de usuários:", e);
+                    }
                     
                     currentUser.customName = finalName;
                     
-                    const savedRoomName = sessionStorage.getItem('pending_room_name') || localStorage.getItem('chat_room_id');
-                    const savedRoomPass = sessionStorage.getItem('pending_room_pass');
+                    const savedRoomInput = localStorage.getItem('pending_room_name') || localStorage.getItem('chat_room_id');
+                    const savedRoomPass = localStorage.getItem('pending_room_pass');
 
-                    if (savedRoomName) {
+                    if (savedRoomInput) {
+                        const roomIdClean = savedRoomInput.toLowerCase().replace(/[^a-z0-9_-]/g, "");
                         if (savedRoomPass) {
-                            await handleRoomAccess(savedRoomName, savedRoomPass);
+                            await handleRoomAccess(roomIdClean, savedRoomInput, savedRoomPass);
                         } else {
-                            const roomRef = doc(db, 'rooms', savedRoomName);
-                            const roomDoc = await getDoc(roomRef);
-                            if (roomDoc.exists()) {
-                                enterChatRoom(savedRoomName, roomDoc.data().admin);
-                            } else {
+                            try {
+                                const roomDoc = await getDoc(doc(db, 'rooms', roomIdClean));
+                                if (roomDoc.exists()) {
+                                    enterChatRoom(roomIdClean, roomDoc.data().admin);
+                                } else {
+                                    console.warn("Sala persistida localmente não existe no banco.");
+                                    showScreen('login');
+                                }
+                            } catch (e) {
+                                console.error(e);
                                 showScreen('login');
                             }
                         }
@@ -450,74 +467,87 @@
                         showScreen('login');
                     }
                 } else {
+                    console.warn("Nenhum nome/apelido encontrado para o usuário.");
                     showScreen('login');
                 }
             }
 
-            async function handleRoomAccess(rName, rPass) {
-                const roomRef = doc(db, 'rooms', rName);
-                const roomDoc = await getDoc(roomRef);
+            async function handleRoomAccess(roomId, roomOriginalName, rPass) {
+                console.log(`Tentando acesso estruturado à sala ID: ${roomId} (Nome: ${roomOriginalName})`);
+                const roomRef = doc(db, 'rooms', roomId);
+                
+                try {
+                    const roomDoc = await getDoc(roomRef);
 
-                if (!roomDoc.exists()) {
-                    await setDoc(roomRef, {
-                        name: rName,
-                        password: rPass,
-                        admin: currentUser.uid,
-                        participants: { [currentUser.uid]: currentUser.customName }
-                    });
-                    localStorage.setItem('chat_room_id', rName);
-                    sessionStorage.removeItem('pending_room_name');
-                    sessionStorage.removeItem('pending_room_pass');
-                    enterChatRoom(rName, currentUser.uid);
-                } else {
-                    const roomData = roomDoc.data();
-                    if (roomData.password === rPass) {
-                        let updateData = {};
-                        updateData[`participants.${currentUser.uid}`] = currentUser.customName;
-                        await updateDoc(roomRef, updateData);
-                        localStorage.setItem('chat_room_id', rName);
-                        sessionStorage.removeItem('pending_room_name');
-                        sessionStorage.removeItem('pending_room_pass');
-                        enterChatRoom(rName, roomData.admin);
+                    if (!roomDoc.exists()) {
+                        console.log("Sala não encontrada. Criando nova instância de sala...");
+                        await setDoc(roomRef, {
+                            id: roomId,
+                            displayName: roomOriginalName,
+                            password: rPass,
+                            admin: currentUser.uid,
+                            participants: { [currentUser.uid]: currentUser.customName }
+                        });
+                        localStorage.setItem('chat_room_id', roomId);
+                        localStorage.removeItem('pending_room_name');
+                        localStorage.removeItem('pending_room_pass');
+                        enterChatRoom(roomId, currentUser.uid);
                     } else {
-                        alert('Senha incorreta para esta sala!');
-                        await signOut(auth);
-                        showScreen('login');
+                        const roomData = roomDoc.data();
+                        if (roomData.password === rPass) {
+                            console.log("Senha correta. Ingressando...");
+                            let updateData = {};
+                            updateData[`participants.${currentUser.uid}`] = currentUser.customName;
+                            await updateDoc(roomRef, updateData);
+                            
+                            localStorage.setItem('chat_room_id', roomId);
+                            localStorage.removeItem('pending_room_name');
+                            localStorage.removeItem('pending_room_pass');
+                            enterChatRoom(roomId, roomData.admin);
+                        } else {
+                            alert('Senha incorreta para esta sala!');
+                            localStorage.removeItem('pending_room_name');
+                            localStorage.removeItem('pending_room_pass');
+                            await signOut(auth);
+                            authProcessed = false;
+                            showScreen('login');
+                        }
                     }
+                } catch (error) {
+                    console.error("Erro crítico no fluxo de salas:", error);
+                    alert("Erro ao acessar sala. Verifique suas permissões no banco.");
+                    showScreen('login');
                 }
             }
 
-            getRedirectResult(auth).then((result) => {
-                if (result && result.user) {
-                    processUserLogin(result.user);
-                }
-            }).catch((error) => {
-                console.error(error);
-                alert("Erro ao processar login do Google. Tente novamente.");
-            });
-
             onAuthStateChanged(auth, async (user) => {
-                if (user && !currentUser) {
-                    processUserLogin(user);
-                } else if (!user) {
+                if (user) {
+                    await processUserLogin(user);
+                } else {
                     currentUser = null;
+                    authProcessed = false;
                     showScreen('login');
                 }
             });
 
             googleLoginBtn.addEventListener('click', async () => {
                 const name = loginNameInput.value.trim();
-                const room = roomNameInput.value.trim().toLowerCase();
+                const roomInput = roomNameInput.value.trim();
                 const pass = roomPassInput.value.trim();
 
-                if (!name || !room || !pass) return;
+                if (!name || !roomInput || !pass) return;
 
-                sessionStorage.setItem('pending_display_name', name);
-                sessionStorage.setItem('pending_room_name', room);
-                sessionStorage.setItem('pending_room_pass', pass);
+                localStorage.setItem('pending_display_name', name);
+                localStorage.setItem('pending_room_name', roomInput);
+                localStorage.setItem('pending_room_pass', pass);
 
-                const provider = new GoogleAuthProvider();
-                await signInWithRedirect(auth, provider);
+                try {
+                    const provider = new GoogleAuthProvider();
+                    await signInWithRedirect(auth, provider);
+                } catch (e) {
+                    console.error("Falha ao invocar redirecionamento:", e);
+                    alert("Não foi possível iniciar o login com o Google.");
+                }
             });
 
             function enterChatRoom(roomId, adminUid) {
@@ -527,15 +557,20 @@
                 showScreen('chat');
 
                 unsubscribeRoom = onSnapshot(doc(db, 'rooms', roomId), (snapshot) => {
-                    if (!snapshot.exists()) return leaveRoom();
+                    if (!snapshot.exists()) {
+                        alert('Esta sala foi removida.');
+                        return leaveRoom();
+                    }
                     const data = snapshot.data();
                     currentRoomAdmin = data.admin;
-                    document.getElementById('chat-room-title').innerText = data.name.toUpperCase();
+                    document.getElementById('chat-room-title').innerText = (data.displayName || data.name || roomId).toUpperCase();
                     
-                    if (!data.participants[currentUser.uid]) {
-                        alert('Você foi removido ou a sala foi fechada.');
+                    if (!data.participants || !data.participants[currentUser.uid]) {
+                        alert('Você foi removido da sala.');
                         leaveRoom();
                     }
+                }, (err) => {
+                    console.error("Erro no listener da sala:", err);
                 });
 
                 const messagesQuery = query(collection(db, 'rooms', roomId, 'messages'), orderBy('timestamp', 'asc'));
@@ -570,6 +605,8 @@
                         container.appendChild(block);
                     });
                     container.scrollTop = container.scrollHeight;
+                }, (err) => {
+                    console.error("Erro no listener de mensagens:", err);
                 });
             }
 
@@ -584,12 +621,13 @@
                         updateData[`participants.${currentUser.uid}`] = deleteField();
                         await updateDoc(roomRef, updateData);
                     } catch (e) {
-                        console.log(e);
+                        console.warn("Erro ao retirar membro do objeto da sala:", e);
                     }
                 }
 
                 currentRoomId = null;
                 localStorage.removeItem('chat_room_id');
+                authProcessed = false;
                 showScreen('login');
             }
             document.getElementById('btn-leave-room').addEventListener('click', leaveRoom);
@@ -602,20 +640,24 @@
                 const text = input.value.trim();
                 if (!text || !currentRoomId) return;
 
-                const msgPayload = {
-                    senderId: currentUser.uid,
-                    senderName: currentUser.customName,
-                    text: text,
-                    timestamp: serverTimestamp()
-                };
+                try {
+                    const msgPayload = {
+                        senderId: currentUser.uid,
+                        senderName: currentUser.customName,
+                        text: text,
+                        timestamp: serverTimestamp()
+                    };
 
-                if (replyMessageData) {
-                    msgPayload.replyTo = replyMessageData;
-                    cancelReply();
+                    if (replyMessageData) {
+                        msgPayload.replyTo = replyMessageData;
+                        cancelReply();
+                    }
+
+                    await addDoc(collection(db, 'rooms', currentRoomId, 'messages'), msgPayload);
+                    input.value = '';
+                } catch (e) {
+                    console.error("Erro ao enviar mensagem:", e);
                 }
-
-                await addDoc(collection(db, 'rooms', currentRoomId, 'messages'), msgPayload);
-                input.value = '';
             }
 
             function openMessageMenu(e, block) {
@@ -677,9 +719,7 @@
 
             document.getElementById('close-profile').addEventListener('click', () => profileModal.style.display = 'none');
             document.getElementById('btn-logout').addEventListener('click', async () => { 
-                localStorage.removeItem('chat_display_name');
-                localStorage.removeItem('chat_room_id');
-                sessionStorage.clear();
+                localStorage.clear();
                 await signOut(auth); 
                 profileModal.style.display = 'none'; 
             });
@@ -698,7 +738,7 @@
                 if (!roomDoc.exists()) return;
                 const roomData = roomDoc.data();
 
-                document.getElementById('info-room-name').innerText = `Sala: ${roomData.name.toUpperCase()}`;
+                document.getElementById('info-room-name').innerText = `Sala: ${(roomData.displayName || roomData.name || currentRoomId).toUpperCase()}`;
                 
                 const isAmIAdmin = currentUser.uid === currentRoomAdmin;
                 document.getElementById('adm-controls').style.display = isAmIAdmin ? 'block' : 'none';
@@ -706,16 +746,18 @@
                 const pList = document.getElementById('participants-list');
                 pList.innerHTML = '';
                 
-                Object.keys(roomData.participants).forEach(uid => {
-                    const name = roomData.participants[uid];
-                    const row = document.createElement('div');
-                    row.className = 'participant-row';
-                    row.innerHTML = `
-                        <span>${name} ${uid === roomData.admin ? '<strong>(ADM)</strong>' : ''}</span>
-                        ${(isAmIAdmin && uid !== currentUser.uid) ? `<button class="btn-danger" style="width:auto; padding:4px 8px; margin:0;" onclick="kickUser('${uid}')">Remover</button>` : ''}
-                    `;
-                    pList.appendChild(row);
-                });
+                if (roomData.participants) {
+                    Object.keys(roomData.participants).forEach(uid => {
+                        const name = roomData.participants[uid];
+                        const row = document.createElement('div');
+                        row.className = 'participant-row';
+                        row.innerHTML = `
+                            <span>${name} ${uid === roomData.admin ? '<strong>(ADM)</strong>' : ''}</span>
+                            ${(isAmIAdmin && uid !== currentUser.uid) ? `<button class="btn-danger" style="width:auto; padding:4px 8px; margin:0;" onclick="kickUser('${uid}')">Remover</button>` : ''}
+                        `;
+                        pList.appendChild(row);
+                    });
+                }
 
                 roomModal.style.display = 'flex';
             });
@@ -733,21 +775,32 @@
             };
 
             document.getElementById('btn-rename-room').addEventListener('click', async () => {
-                const newName = document.getElementById('new-room-name').value.trim().toLowerCase();
+                const newName = document.getElementById('new-room-name').value.trim();
                 if (!newName) return alert('Insira um nome válido!');
-                await updateDoc(doc(db, 'rooms', currentRoomId), { name: newName });
-                alert('Nome alteredo com sucesso!');
-                roomModal.style.display = 'none';
+                try {
+                    await updateDoc(doc(db, 'rooms', currentRoomId), { displayName: newName });
+                    alert('Nome alterado com sucesso!');
+                    document.getElementById('new-room-name').value = '';
+                    roomModal.style.display = 'none';
+                } catch (e) {
+                    console.error(e);
+                    alert("Não foi possível renomear a sala.");
+                }
             });
 
             document.getElementById('btn-clear-chat').addEventListener('click', async () => {
                 if (confirm("ATENÇÃO: Deseja apagar permanentemente todas as mensagens desta sala?")) {
-                    const messagesSnapshot = await getDocs(collection(db, 'rooms', currentRoomId, 'messages'));
-                    const batch = writeBatch(db);
-                    messagesSnapshot.forEach(docSnap => batch.delete(docSnap.ref));
-                    await batch.commit();
-                    alert('Histórico de conversas limpo!');
-                    roomModal.style.display = 'none';
+                    try {
+                        const messagesSnapshot = await getDocs(collection(db, 'rooms', currentRoomId, 'messages'));
+                        const batch = writeBatch(db);
+                        messagesSnapshot.forEach(docSnap => batch.delete(docSnap.ref));
+                        await batch.commit();
+                        alert('Histórico de conversas limpo!');
+                        roomModal.style.display = 'none';
+                    } catch (e) {
+                        console.error(e);
+                        alert("Erro ao limpar histórico.");
+                    }
                 }
             });
         }
