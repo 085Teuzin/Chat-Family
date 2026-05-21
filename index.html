@@ -3,174 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Família Chat</title>
+    <title>Clone Zap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-main: #0b0f19;
-            --bg-card: #131c2e;
-            --text-main: #f3f4f6;
-            --text-muted: #64748b;
-            --border: #1e293b;
-            --chat-bg: #070a12;
-            --msg-in: #1e293b;
-            --msg-out: #065f46;
-            --accent: #10b981;
+            --wa-bg: #0b141a;
+            --wa-header: #202c33;
+            --wa-panel: #111b21;
+            --wa-border: #222e35;
+            --wa-text: #e9edef;
+            --wa-muted: #8696a0;
+            --wa-incoming: #202c33;
+            --wa-outgoing: #005c4b;
+            --wa-accent: #00a884;
         }
         body {
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background-color: var(--wa-bg);
+            color: var(--wa-text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
-        .app-card { background-color: var(--bg-card); border-color: var(--border); }
-        .text-muted { color: var(--text-muted); }
-        .border-custom { border-color: var(--border); }
-        .chat-area { background-color: var(--chat-bg); }
-        .msg-in { background-color: var(--msg-in); color: var(--text-main); }
-        .msg-out { background-color: var(--msg-out); color: #ffffff; }
+        .wa-header { background-color: var(--wa-header); }
+        .wa-panel { background-color: var(--wa-panel); }
+        .wa-border { border-color: var(--wa-border); }
+        .wa-incoming { background-color: var(--wa-incoming); }
+        .wa-outgoing { background-color: var(--wa-outgoing); }
+        .text-muted { color: var(--wa-muted); }
         .hide { display: none !important; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: var(--border); }
+        .chat-bg {
+            background-color: #0b141a;
+            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+            background-blend-mode: overlay;
+            opacity: 0.4;
+        }
     </style>
 </head>
-<body class="h-screen w-screen overflow-hidden flex flex-col justify-between antialiased selection:bg-emerald-500/30">
+<body class="h-screen w-screen overflow-hidden flex flex-col justify-between antialiased select-none">
 
-    <div id="screen-login" class="flex-1 flex flex-col items-center justify-center p-4">
-        <div class="app-card w-full max-w-sm p-6 border-2 flex flex-col items-center text-center shadow-[4px_4px_0px_0px_rgba(16,185,129,0.2)]">
-            <div class="w-16 h-16 bg-emerald-600 border-2 border-emerald-400 flex items-center justify-center text-white text-3xl mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]">
-                <i class="fas fa-terminal"></i>
+    <div id="screen-auth" class="flex-1 flex flex-col items-center justify-center p-6">
+        <div class="wa-panel w-full max-w-sm p-6 border wa-border rounded-xl flex flex-col items-center text-center shadow-2xl">
+            <div class="w-16 h-16 bg-[#00a884] rounded-full flex items-center justify-center text-white text-3xl mb-4">
+                <i class="fab fa-whatsapp"></i>
             </div>
-            <h1 class="text-xl font-black uppercase tracking-wider mb-1">Família Chat</h1>
-            <p class="text-muted text-xs mb-6 uppercase tracking-tight">[ Conexão Privada Familiar ]</p>
-            
-            <div class="w-full text-left mb-5">
-                <label class="block text-[10px] font-black uppercase tracking-widest mb-1.5 text-emerald-500">// Identificação</label>
-                <input type="text" id="login-nickname" placeholder="Ex: Tio Joao" class="w-full p-3 border-2 border-custom bg-black/40 text-sm font-bold outline-none focus:border-emerald-500 text-white placeholder:text-slate-700">
-            </div>
-
-            <button id="btn-login" class="w-full bg-emerald-600 hover:bg-emerald-700 active:translate-y-0.5 text-white font-black uppercase text-xs p-3.5 border-2 border-emerald-400 flex items-center justify-center gap-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.4)] transition-all">
-                <i class="fab fa-google text-sm"></i> Vincular Conta Google
+            <h1 class="text-xl font-bold mb-1">Entrar no Clone Zap</h1>
+            <p class="text-muted text-xs mb-6">Conecte sua conta para acessar suas conversas privadas</p>
+            <button id="btn-google-login" class="w-full bg-[#00a884] hover:bg-[#008f70] text-white font-bold text-sm p-3.5 rounded-lg flex items-center justify-center gap-3 transition-all">
+                <i class="fab fa-google text-base"></i> Entrar com o Google
             </button>
         </div>
     </div>
 
-    <div id="screen-lobby" class="hide flex-1 flex flex-col p-4 max-w-sm mx-auto w-full justify-center">
-        <div class="app-card border-2 p-5 shadow-[4px_4px_0px_0px_rgba(16,185,129,0.15)] w-full">
-            <div class="flex items-center gap-3 border-b-2 border-custom pb-4 mb-5">
-                <img id="lobby-avatar" src="" class="w-10 h-10 border-2 border-custom object-cover">
-                <div class="overflow-hidden">
-                    <span class="text-[9px] text-emerald-500 font-bold block uppercase tracking-wider">// Usuário Ativo</span>
-                    <h2 class="font-black text-sm truncate uppercase tracking-tight" id="lobby-welcome">...</h2>
-                </div>
-            </div>
-
+    <div id="screen-register" class="hide flex-1 flex flex-col items-center justify-center p-6">
+        <div class="wa-panel w-full max-w-sm p-6 border wa-border rounded-xl shadow-2xl">
+            <h2 class="text-lg font-bold mb-1 text-center">Configurar Perfil</h2>
+            <p class="text-muted text-xs mb-5 text-center">Defina seus dados para identificação na rede</p>
+            
             <div class="space-y-4">
                 <div>
-                    <label class="block text-[10px] font-black uppercase tracking-widest mb-1 text-muted">ID da Sala (Sem espaços)</label>
-                    <input type="text" id="room-name" placeholder="Ex: sala-principal" class="w-full p-2.5 border-2 border-custom bg-black/40 text-sm font-bold outline-none focus:border-emerald-500 text-white uppercase placeholder:text-slate-700">
+                    <label class="block text-xs font-semibold text-muted mb-1">Nome de Usuário</label>
+                    <input type="text" id="reg-name" placeholder="Seu nome ou apelido" class="w-full p-3 border wa-border bg-[#202c33] text-sm font-medium rounded-lg outline-none focus:border-[#00a884] text-white">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-black uppercase tracking-widest mb-1 text-muted">Chave de Segurança</label>
-                    <input type="password" id="room-pass" placeholder="••••••••" class="w-full p-2.5 border-2 border-custom bg-black/40 text-sm font-bold outline-none focus:border-emerald-500 text-white placeholder:text-slate-700">
+                    <label class="block text-xs font-semibold text-muted mb-1">Número de Acesso (4 Dígitos)</label>
+                    <input type="text" id="reg-number" maxlength="4" placeholder="Ex: 1234" class="w-full p-3 border wa-border bg-[#202c33] text-sm font-bold rounded-lg outline-none focus:border-[#00a884] text-white tracking-widest text-center">
                 </div>
-                <button id="btn-join-room" class="w-full bg-emerald-600 hover:bg-emerald-700 active:translate-y-0.5 text-white font-black uppercase text-xs p-3 border-2 border-emerald-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition-all">
-                    Acessar / Gerar Canal
-                </button>
-                <button id="btn-logout" class="w-full bg-transparent border-2 border-dashed border-red-500/40 hover:border-red-500 text-red-500/80 hover:text-red-500 font-bold uppercase text-[10px] p-2 transition-all mt-2">
-                    Desconectar Sistema
+                <button id="btn-complete-register" class="w-full bg-[#00a884] hover:bg-[#008f70] text-white font-bold text-sm p-3 rounded-lg transition-all pt-3">
+                    Concluir e Abrir Mensagens
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="screen-chat" class="hide flex-1 flex flex-col h-full w-full max-w-md mx-auto relative app-card border-x-2">
-        <header class="h-14 px-3 border-b-2 border-custom flex items-center justify-between z-10 bg-slate-900/40 backdrop-blur-md">
-            <div class="flex items-center gap-3 overflow-hidden">
-                <button id="btn-back-lobby" class="text-muted hover:text-white px-1">
-                    <i class="fas fa-chevron-left"></i>
+    <div id="screen-main-list" class="hide flex-1 flex flex-col h-full w-full max-w-md mx-auto relative wa-panel border-x wa-border">
+        <header class="wa-header h-16 px-4 flex items-center justify-between border-b wa-border">
+            <h1 class="text-xl font-bold text-[#e9edef]">WhatsApp</h1>
+            <div class="flex items-center gap-4 relative">
+                <img id="main-my-avatar" src="" class="w-9 h-9 rounded-full object-cover border wa-border">
+                <button id="btn-main-menu" class="text-muted hover:text-white p-1 text-lg">
+                    <i class="fas fa-ellipsis-v"></i>
                 </button>
-                <div class="overflow-hidden">
-                    <h3 id="chat-room-title" class="font-black text-sm uppercase tracking-wider truncate">SALA</h3>
-                    <span id="chat-user-role" class="text-[8px] font-black px-1.5 py-0.5 border tracking-widest uppercase">MEMBRO</span>
+                <div id="dropdown-main" class="hide absolute top-10 right-0 w-44 wa-header border wa-border rounded shadow-xl z-30 py-1 text-sm">
+                    <button id="menu-edit-profile" class="w-full text-left px-4 py-2.5 hover:bg-[#111b21]">Editar Perfil</button>
+                    <button id="menu-logout" class="w-full text-left px-4 py-2.5 hover:bg-[#111b21] text-red-400">Sair da Conta</button>
                 </div>
             </div>
-            <button id="btn-open-panel" class="w-9 h-9 border-2 border-custom flex items-center justify-center text-muted hover:text-white bg-black/20">
-                <i class="fas fa-sliders-h text-xs"></i>
+        </header>
+
+        <div id="contacts-stack-list" class="flex-1 overflow-y-auto divide-y wa-border"></div>
+
+        <button id="btn-trigger-add-contact" class="absolute bottom-6 right-6 w-14 h-14 bg-[#00a884] hover:bg-[#008f70] rounded-full flex items-center justify-center text-white text-xl shadow-2xl z-10 transition-transform active:scale-95">
+            <i class="fas fa-comment-medical"></i>
+        </button>
+    </div>
+
+    <div id="screen-private-chat" class="hide flex-1 flex flex-col h-full w-full max-w-md mx-auto relative wa-panel border-x wa-border">
+        <header class="wa-header h-14 px-3 flex items-center justify-between border-b wa-border z-10">
+            <div class="flex items-center gap-2 overflow-hidden">
+                <button id="btn-chat-back" class="text-muted hover:text-white px-1">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <img id="chat-target-avatar" src="" class="w-9 h-9 rounded-full object-cover">
+                <div class="overflow-hidden">
+                    <h3 id="chat-target-name" class="font-bold text-sm text-[#e9edef] truncate">Contato</h3>
+                    <span id="chat-target-number" class="text-[11px] text-muted block font-mono">#0000</span>
+                </div>
+            </div>
+            <button id="btn-chat-menu" class="text-muted hover:text-white p-2 relative">
+                <i class="fas fa-ellipsis-v"></i>
+                <div id="dropdown-chat" class="hide absolute top-10 right-0 w-44 wa-header border wa-border rounded shadow-xl z-30 py-1 text-sm text-left font-normal">
+                    <button id="menu-chat-edit" class="w-full text-left px-4 py-2.5 hover:bg-[#111b21]">Editar Nome</button>
+                    <button id="menu-chat-clear" class="w-full text-left px-4 py-2.5 hover:bg-[#111b21]">Limpar Conversa</button>
+                    <button id="menu-chat-delete" class="w-full text-left px-4 py-2.5 hover:bg-[#111b21] text-red-400">Excluir Contato</button>
+                </div>
             </button>
         </header>
 
-        <div id="chat-messages" class="flex-1 chat-area p-3 overflow-y-auto space-y-3 flex flex-col"></div>
-
-        <div id="reply-preview" class="hide px-3 py-2 bg-emerald-500/10 border-t-2 border-custom flex items-center justify-between text-xs">
-            <div class="border-l-2 border-emerald-500 pl-2 overflow-hidden">
-                <span class="font-black block text-emerald-400 text-[9px] uppercase tracking-wider" id="reply-user">RESPONDENDO A</span>
-                <p class="text-muted truncate text-[11px]" id="reply-text">...</p>
-            </div>
-            <button id="btn-cancel-reply" class="text-muted hover:text-white text-xs px-1">
-                <i class="fas fa-times"></i>
-            </button>
+        <div class="flex-1 relative overflow-hidden">
+            <div class="absolute inset-0 chat-bg"></div>
+            <div id="chat-messages-container" class="absolute inset-0 p-4 overflow-y-auto space-y-2 flex flex-col z-10"></div>
         </div>
 
-        <div class="p-2 border-t-2 border-custom flex items-end gap-2 bg-slate-900/20 z-10">
-            <div class="flex-1 bg-black/40 border-2 border-custom p-1.5 min-h-[40px] flex flex-col justify-end">
-                <div id="edit-indicator" class="hide text-[8px] font-black text-amber-500 px-1 pb-1 flex justify-between items-center tracking-widest">
-                    <span>// MODO EDIÇÃO</span>
-                    <button id="btn-cancel-edit" class="text-muted font-normal text-xs"><i class="fas fa-times"></i></button>
-                </div>
-                <textarea id="msg-input" rows="1" placeholder="Digite aqui..." class="w-full bg-transparent outline-none resize-none px-1 max-h-24 overflow-y-auto text-xs font-bold text-white placeholder:text-slate-700" style="line-height: 16px;"></textarea>
+        <div class="p-2 bg-[#111b21] flex items-center gap-2 z-10">
+            <div class="flex-1 bg-[#202c33] rounded-lg p-2 min-h-[40px] flex items-center">
+                <input type="text" id="chat-message-input" placeholder="Mensagem" class="w-full bg-transparent outline-none px-2 text-sm text-white placeholder:text-[#8696a0]">
             </div>
-            <button id="btn-send" class="w-10 h-10 bg-emerald-600 hover:bg-emerald-700 border-2 border-emerald-400 flex items-center justify-center text-white flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">
-                <i class="fas fa-arrow-right text-xs"></i>
-            </button>
         </div>
+    </div>
 
-        <div id="modal-panel" class="hide absolute inset-0 bg-black/80 z-20 flex items-center justify-center p-4 backdrop-blur-xs">
-            <div class="w-full max-w-sm app-card border-2 p-5 space-y-5 shadow-[6px_6px_0px_0px_rgba(16,185,129,0.2)]">
-                <div class="flex justify-between items-center border-b-2 border-custom pb-2">
-                    <h4 class="font-black text-xs uppercase tracking-widest text-emerald-500">// PARÂMETROS DA SALA</h4>
-                    <button id="btn-close-panel" class="w-6 h-6 border border-custom flex items-center justify-center text-muted hover:text-white text-xs bg-black/20">
-                        <i class="fas fa-times"></i>
-                    </button>
+    <div id="modal-add-contact" class="hide absolute inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
+        <div class="w-full max-w-xs wa-panel border wa-border p-5 rounded-xl space-y-4 shadow-2xl">
+            <h3 class="font-bold text-sm uppercase tracking-wider text-[#00a884]">Adicionar Contato</h3>
+            <div class="space-y-3">
+                <input type="text" id="add-contact-name" placeholder="Nome do Contato" class="w-full p-2.5 text-xs border wa-border bg-[#202c33] font-medium text-white outline-none rounded-lg">
+                <input type="text" id="add-contact-number" maxlength="4" placeholder="Número (4 dígitos)" class="w-full p-2.5 text-xs border wa-border bg-[#202c33] font-bold text-white outline-none rounded-lg text-center tracking-widest">
+            </div>
+            <div class="flex gap-2 justify-end text-xs font-bold pt-1">
+                <button id="btn-cancel-add-contact" class="px-4 py-2 text-muted uppercase">Cancelar</button>
+                <button id="btn-save-add-contact" class="px-4 py-2 bg-[#00a884] text-white uppercase rounded-lg">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-edit-profile" class="hide absolute inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
+        <div class="w-full max-w-xs wa-panel border wa-border p-5 rounded-xl space-y-4 shadow-2xl">
+            <h3 class="font-bold text-sm uppercase tracking-wider text-[#00a884]">Editar Perfil</h3>
+            
+            <div class="flex flex-col items-center gap-2 pb-2">
+                <div class="relative group w-16 h-16 border wa-border rounded-full overflow-hidden">
+                    <img id="edit-profile-avatar" src="" class="w-full h-full object-cover">
+                    <label for="upload-profile-avatar" class="absolute inset-0 bg-black/60 flex items-center justify-center text-white cursor-pointer text-xs">
+                        <i class="fas fa-camera"></i>
+                    </label>
+                    <input type="file" id="upload-profile-avatar" accept="image/*" class="hidden">
                 </div>
+                <span class="text-[10px] text-muted">Toque na foto para alterar</span>
+            </div>
 
-                <div class="space-y-4">
-                    <div class="flex items-center gap-3 bg-black/20 p-2 border border-custom">
-                        <div class="relative group w-11 h-11 border border-custom flex-shrink-0">
-                            <img id="panel-user-avatar" src="" class="w-full h-full object-cover">
-                            <label for="upload-avatar" class="absolute inset-0 bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 cursor-pointer text-[10px] transition-all">
-                                <i class="fas fa-pen"></i>
-                            </label>
-                            <input type="file" id="upload-avatar" accept="image/*" class="hidden">
-                        </div>
-                        <div class="overflow-hidden">
-                            <span class="text-[8px] text-muted block font-black uppercase tracking-wider">Identidade Local</span>
-                            <span id="panel-user-name" class="font-bold text-xs text-white truncate block">...</span>
-                        </div>
-                    </div>
-
-                    <div id="adm-controls" class="hide space-y-3 pt-1 border-t border-dashed border-custom">
-                        <div class="bg-amber-500/10 border border-amber-500/30 p-2 text-[9px] text-amber-500 font-black uppercase tracking-wider">
-                            <i class="fas fa-shield-alt mr-1"></i> Modo Administrador Ativo
-                        </div>
-                        <div>
-                            <label class="block text-[9px] font-black uppercase tracking-widest mb-1 text-muted">Alterar Nome do Canal</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="panel-room-rename" class="flex-1 p-2 text-xs border border-custom bg-black/40 font-bold uppercase text-white outline-none focus:border-emerald-500">
-                                <button id="btn-room-rename" class="bg-emerald-600 hover:bg-emerald-700 border border-emerald-400 text-white font-black px-3 text-[10px] uppercase">OK</button>
-                            </div>
-                        </div>
-                        <button id="btn-room-clear" class="w-full bg-red-950/20 border border-red-500/40 hover:border-red-500 text-red-400 hover:text-red-500 font-black p-2 text-[10px] uppercase tracking-wider transition-all">
-                            <i class="fas fa-trash-alt mr-1"></i> Expurgar Histórico de Mensagens
-                        </button>
-                    </div>
-
-                    <div class="space-y-1.5">
-                        <label class="block text-[9px] font-black uppercase tracking-widest text-muted">// Integrantes na Sala</label>
-                        <div id="panel-members-list" class="max-h-32 overflow-y-auto space-y-1 pr-1 border border-custom p-1 bg-black/20"></div>
-                    </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-muted mb-1">Nome de Exibição</label>
+                    <input type="text" id="edit-profile-name" class="w-full p-2.5 text-xs border wa-border bg-[#202c33] font-medium text-white outline-none rounded-lg">
                 </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-muted mb-1">Número Identificador (Fixo)</label>
+                    <input type="text" id="edit-profile-number" readonly class="w-full p-2.5 text-xs border wa-border bg-[#111b21] font-mono text-center tracking-widest text-muted outline-none rounded-lg">
+                </div>
+            </div>
+            <div class="flex gap-2 justify-end text-xs font-bold pt-1">
+                <button id="btn-cancel-edit-profile" class="px-4 py-2 text-muted uppercase">Fechar</button>
+                <button id="btn-save-edit-profile" class="px-4 py-2 bg-[#00a884] text-white uppercase rounded-lg">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-edit-contact" class="hide absolute inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
+        <div class="w-full max-w-xs wa-panel border wa-border p-5 rounded-xl space-y-4 shadow-2xl">
+            <h3 class="font-bold text-sm uppercase tracking-wider text-[#00a884]">Editar Contato</h3>
+            <input type="text" id="edit-contact-name" placeholder="Apelido do contato" class="w-full p-2.5 text-xs border wa-border bg-[#202c33] font-medium text-white outline-none rounded-lg">
+            <div class="flex gap-2 justify-end text-xs font-bold pt-1">
+                <button id="btn-cancel-edit-contact" class="px-4 py-2 text-muted uppercase">Cancelar</button>
+                <button id="btn-save-edit-contact" class="px-4 py-2 bg-[#00a884] text-white uppercase rounded-lg">Salvar</button>
             </div>
         </div>
     </div>
@@ -196,426 +209,350 @@
         const db = getDatabase(app);
         const provider = new GoogleAuthProvider();
 
-        let currentUser = null;
-        let currentRoom = null;
-        let userRole = "Membro";
-        let activeReplyId = null;
-        let activeEditId = null;
-        let unsubRoomMessages = null;
-        let unsubRoomMeta = null;
-        let unsubRoomUsers = null;
+        let myAccountData = null;
+        let selectedContactUid = null;
+        let currentActiveChatId = null;
+        let unsubChatMessages = null;
+        let unsubContactsList = null;
 
-        const scrLogin = document.getElementById("screen-login");
-        const scrLobby = document.getElementById("screen-lobby");
-        const scrChat = document.getElementById("screen-chat");
+        const scrAuth = document.getElementById("screen-auth");
+        const scrRegister = document.getElementById("screen-register");
+        const scrMainList = document.getElementById("screen-main-list");
+        const scrPrivateChat = document.getElementById("screen-private-chat");
 
-        const inputLoginNick = document.getElementById("login-nickname");
-        const btnLogin = document.getElementById("btn-login");
-        
-        const lobbyAvatar = document.getElementById("lobby-avatar");
-        const lobbyWelcome = document.getElementById("lobby-welcome");
-        const inputRoomName = document.getElementById("room-name");
-        const inputRoomPass = document.getElementById("room-pass");
-        const btnJoinRoom = document.getElementById("btn-join-room");
-        const btnLogout = document.getElementById("btn-logout");
+        const btnGoogleLogin = document.getElementById("btn-google-login");
+        const inputRegName = document.getElementById("reg-name");
+        const inputRegNumber = document.getElementById("reg-number");
+        const btnCompleteRegister = document.getElementById("btn-complete-register");
 
-        const chatRoomTitle = document.getElementById("chat-room-title");
-        const chatUserRole = document.getElementById("chat-user-role");
-        const chatMessages = document.getElementById("chat-messages");
-        const msgInput = document.getElementById("msg-input");
-        const btnSend = document.getElementById("btn-send");
-        const btnBackLobby = document.getElementById("btn-back-lobby");
-        
-        const replyPreview = document.getElementById("reply-preview");
-        const replyUser = document.getElementById("reply-user");
-        const replyText = document.getElementById("reply-text");
-        const btnCancelReply = document.getElementById("btn-cancel-reply");
+        const imgMainMyAvatar = document.getElementById("main-my-avatar");
+        const btnMainMenu = document.getElementById("btn-main-menu");
+        const dropdownMain = document.getElementById("dropdown-main");
+        const menuEditProfile = document.getElementById("menu-edit-profile");
+        const menuLogout = document.getElementById("menu-logout");
+        const contactsStackList = document.getElementById("contacts-stack-list");
+        const btnTriggerAddContact = document.getElementById("btn-trigger-add-contact");
 
-        const editIndicator = document.getElementById("edit-indicator");
-        const btnCancelEdit = document.getElementById("btn-cancel-edit");
+        const btnChatBack = document.getElementById("btn-chat-back");
+        const imgChatTargetAvatar = document.getElementById("chat-target-avatar");
+        const txtChatTargetName = document.getElementById("chat-target-name");
+        const txtChatTargetNumber = document.getElementById("chat-target-number");
+        const btnChatMenu = document.getElementById("btn-chat-menu");
+        const dropdownChat = document.getElementById("dropdown-chat");
+        const menuChatEdit = document.getElementById("menu-chat-edit");
+        const menuChatClear = document.getElementById("menu-chat-clear");
+        const menuChatDelete = document.getElementById("menu-chat-delete");
+        const chatMessagesContainer = document.getElementById("chat-messages-container");
+        const inputChatMessage = document.getElementById("chat-message-input");
 
-        const modalPanel = document.getElementById("modal-panel");
-        const btnOpenPanel = document.getElementById("btn-open-panel");
-        const btnClosePanel = document.getElementById("btn-close-panel");
-        const panelUserAvatar = document.getElementById("panel-user-avatar");
-        const panelUserName = document.getElementById("panel-user-name");
-        const uploadAvatar = document.getElementById("upload-avatar");
-        const admControls = document.getElementById("adm-controls");
-        const panelRoomRename = document.getElementById("panel-room-rename");
-        const btnRoomRename = document.getElementById("btn-room-rename");
-        const btnRoomClear = document.getElementById("btn-room-clear");
-        const panelMembersList = document.getElementById("panel-members-list");
+        const modalAddContact = document.getElementById("modal-add-contact");
+        const inputAddContactName = document.getElementById("add-contact-name");
+        const inputAddContactNumber = document.getElementById("add-contact-number");
+        const btnCancelAddContact = document.getElementById("btn-cancel-add-contact");
+        const btnSaveAddContact = document.getElementById("btn-save-add-contact");
 
-        msgInput.addEventListener("input", () => {
-            msgInput.style.height = "auto";
-            msgInput.style.height = msgInput.scrollHeight + "px";
-        });
+        const modalEditProfile = document.getElementById("modal-edit-profile");
+        const imgEditProfileAvatar = document.getElementById("edit-profile-avatar");
+        const uploadProfileAvatar = document.getElementById("upload-profile-avatar");
+        const inputEditProfileName = document.getElementById("edit-profile-name");
+        const inputEditProfileNumber = document.getElementById("edit-profile-number");
+        const btnCancelEditProfile = document.getElementById("btn-cancel-edit-profile");
+        const btnSaveEditProfile = document.getElementById("btn-save-edit-profile");
+
+        const modalEditContact = document.getElementById("modal-edit-contact");
+        const inputEditContactName = document.getElementById("edit-contact-name");
+        const btnCancelEditContact = document.getElementById("btn-cancel-edit-contact");
+        const btnSaveEditContact = document.getElementById("btn-save-edit-contact");
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const snapshot = await get(ref(db, `users/${user.uid}`));
+                const snapshot = await get(ref(db, `clone_zap/users/${user.uid}`));
                 if (snapshot.exists()) {
-                    currentUser = snapshot.val();
-                    showScreen("lobby");
+                    myAccountData = snapshot.val();
+                    showScreen("main-list");
+                    bindContactsRealtime();
                 } else {
-                    await signOut(auth);
-                    showScreen("login");
+                    showScreen("register");
                 }
             } else {
-                showScreen("login");
+                showScreen("auth");
             }
         });
 
-        btnLogin.addEventListener("click", async () => {
-            const nickname = inputLoginNick.value.trim();
-            if (!nickname) return alert("Digite seu apelido familiar!");
-
+        btnGoogleLogin.addEventListener("click", async () => {
             try {
-                const result = await signInWithPopup(auth, provider);
-                const user = result.user;
-                
-                currentUser = {
-                    uid: user.uid,
-                    name: nickname,
-                    email: user.email,
-                    avatar: user.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop"
-                };
-
-                await set(ref(db, `users/${user.uid}`), currentUser);
-                showScreen("lobby");
+                await signInWithPopup(auth, provider);
             } catch (err) {
-                alert("Falha: " + err.message);
+                alert("Erro no login: " + err.message);
             }
         });
 
-        btnLogout.addEventListener("click", () => {
-            signOut(auth).then(() => {
-                currentUser = null;
-                showScreen("login");
-            });
+        btnCompleteRegister.addEventListener("click", async () => {
+            const name = inputRegName.value.trim();
+            const num = inputRegNumber.value.trim();
+
+            if (!name || num.length !== 4 || isNaN(num)) {
+                return alert("Insira um nome válido e um número de 4 dígitos!");
+            }
+
+            const user = auth.currentUser;
+            myAccountData = {
+                uid: user.uid,
+                name: name,
+                number: num,
+                avatar: user.photoURL || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&h=150&fit=crop"
+            };
+
+            await set(ref(db, `clone_zap/users/${user.uid}`), myAccountData);
+            await set(ref(db, `clone_zap/directory/${num}`), user.uid);
+            
+            showScreen("main-list");
+            bindContactsRealtime();
         });
 
         function showScreen(screen) {
-            scrLogin.classList.add("hide");
-            scrLobby.classList.add("hide");
-            scrChat.classList.add("hide");
+            scrAuth.classList.add("hide");
+            scrRegister.classList.add("hide");
+            scrMainList.classList.add("hide");
+            scrPrivateChat.classList.add("hide");
 
-            if (screen === "login") {
-                scrLogin.classList.remove("hide");
-            } else if (screen === "lobby") {
-                scrLobby.classList.remove("hide");
-                lobbyWelcome.innerText = currentUser.name;
-                lobbyAvatar.src = currentUser.avatar;
-            } else if (screen === "chat") {
-                scrChat.classList.remove("hide");
+            if (screen === "auth") scrAuth.classList.remove("hide");
+            if (screen === "register") scrRegister.classList.remove("hide");
+            if (screen === "main-list") {
+                scrMainList.classList.remove("hide");
+                imgMainMyAvatar.src = myAccountData.avatar;
             }
+            if (screen === "private-chat") scrPrivateChat.classList.remove("hide");
         }
 
-        btnJoinRoom.addEventListener("click", async () => {
-            const rawRoom = inputRoomName.value.trim().toLowerCase();
-            const pass = inputRoomPass.value.trim();
-
-            if (!rawRoom || !pass) return alert("Preencha todos os campos!");
-            const roomName = rawRoom.replace(/[^a-z0-9_-]/g, "");
-
-            const roomRef = ref(db, `rooms/${roomName}`);
-            const snapshot = await get(roomRef);
-
-            if (!snapshot.exists()) {
-                const newRoom = {
-                    meta: {
-                        name: roomName,
-                        password: pass,
-                        createdBy: currentUser.uid
-                    }
-                };
-                await set(roomRef, newRoom);
-                enterRoom(roomName, "ADM");
-            } else {
-                const roomData = snapshot.val();
-                if (roomData.meta.password !== pass) {
-                    return alert("Chave de segurança incorreta!");
-                }
-                const role = roomData.meta.createdBy === currentUser.uid ? "ADM" : "Membro";
-                enterRoom(roomName, role);
-            }
+        btnMainMenu.addEventListener("click", (e) => {
+            e.stopPropagation();
+            dropdownMain.classList.toggle("hide");
         });
 
-        async function enterRoom(roomName, role) {
-            currentRoom = roomName;
-            userRole = role;
-            
-            chatRoomTitle.innerText = roomName;
-            chatUserRole.innerText = role;
-            if(role === "ADM") {
-                chatUserRole.className = "text-[8px] font-black px-1.5 py-0.5 border border-amber-500 bg-amber-500/10 text-amber-500 tracking-widest uppercase";
-            } else {
-                chatUserRole.className = "text-[8px] font-black px-1.5 py-0.5 border border-emerald-500 bg-emerald-500/10 text-emerald-500 tracking-widest uppercase";
-            }
-
-            panelUserName.innerText = currentUser.name;
-            panelUserAvatar.src = currentUser.avatar;
-            panelRoomRename.value = roomName;
-
-            if (role === "ADM") {
-                admControls.classList.remove("hide");
-            } else {
-                admControls.classList.add("hide");
-            }
-
-            await set(ref(db, `rooms/${roomName}/users/${currentUser.uid}`), {
-                uid: currentUser.uid,
-                name: currentUser.name,
-                avatar: currentUser.avatar,
-                role: role
-            });
-
-            showScreen("chat");
-            listenRoom(roomName);
-        }
-
-        function listenRoom(roomName) {
-            if (unsubRoomMessages) unsubRoomMessages();
-            if (unsubRoomMeta) unsubRoomMeta();
-            if (unsubRoomUsers) unsubRoomUsers();
-
-            unsubRoomMeta = onValue(ref(db, `rooms/${roomName}/meta`), (snapshot) => {
-                if (!snapshot.exists()) {
-                    exitRoomForce();
-                    return;
-                }
-                const meta = snapshot.val();
-                chatRoomTitle.innerText = meta.name;
-                currentRoom = meta.name;
-            });
-
-            unsubRoomUsers = onValue(ref(db, `rooms/${roomName}/users`), (snapshot) => {
-                if (!snapshot.exists()) return;
-                const users = snapshot.val();
-                
-                if (!users[currentUser.uid]) {
-                    exitRoomForce();
-                    alert("Você foi removido da sala.");
-                    return;
-                }
-
-                userRole = users[currentUser.uid].role;
-                chatUserRole.innerText = userRole;
-
-                panelMembersList.innerHTML = "";
-                Object.values(users).forEach(u => {
-                    const item = document.createElement("div");
-                    item.className = "flex items-center justify-between bg-black/40 p-2 border border-custom text-xs";
-                    
-                    let kickBtn = "";
-                    if (userRole === "ADM" && u.uid !== currentUser.uid) {
-                        kickBtn = `<button class="text-red-400 hover:text-red-500 text-[9px] font-black border border-red-500/20 px-1.5 py-0.5 uppercase bg-red-500/5 btn-kick" data-uid="${u.uid}">Banir</button>`;
-                    }
-
-                    item.innerHTML = `
-                        <div class="flex items-center gap-2 overflow-hidden pr-1">
-                            <img src="${u.avatar}" class="w-6 h-6 border border-custom object-cover">
-                            <span class="font-bold truncate text-slate-300">${u.name} <span class="text-[8px] text-muted">[${u.role}]</span></span>
-                        </div>
-                        ${kickBtn}
-                    `;
-                    panelMembersList.appendChild(item);
-                });
-
-                document.querySelectorAll(".btn-kick").forEach(btn => {
-                    btn.addEventListener("click", (e) => {
-                        const targetUid = e.currentTarget.getAttribute("data-uid");
-                        remove(ref(db, `rooms/${currentRoom}/users/${targetUid}`));
-                    });
-                });
-            });
-
-            unsubRoomMessages = onValue(ref(db, `rooms/${roomName}/messages`), (snapshot) => {
-                chatMessages.innerHTML = "";
-                if (!snapshot.exists()) return;
-
-                const msgs = snapshot.val();
-                Object.keys(msgs).forEach(id => {
-                    const m = msgs[id];
-                    const isMe = m.senderId === currentUser.uid;
-                    
-                    const msgDiv = document.createElement("div");
-                    msgDiv.className = `max-w-[88%] border p-2.5 relative group flex flex-col ${isMe ? "msg-out self-end border-emerald-500/40" : "msg-in self-start border-slate-700"}`;
-                    
-                    let replyMarkup = "";
-                    if (m.replyTo) {
-                        replyMarkup = `
-                            <div class="border-l-2 border-emerald-400 bg-black/30 px-2 py-0.5 text-[10px] mb-1.5 opacity-80 pointer-events-none">
-                                <span class="font-black block text-emerald-400 text-[8px] uppercase">${m.replyTo.user}</span>
-                                <p class="truncate text-slate-400">${m.replyTo.text}</p>
-                            </div>
-                        `;
-                    }
-
-                    let actionMenu = "";
-                    const canEdit = isMe;
-                    const canDelete = isMe || userRole === "ADM";
-
-                    actionMenu = `
-                        <div class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 flex gap-1.5 bg-black/80 border border-custom px-1.5 py-0.5 text-[9px] text-white transition-all">
-                            <button class="act-reply" data-id="${id}" data-user="${m.senderName}" data-text="${m.text}"><i class="fas fa-reply text-slate-400"></i></button>
-                            ${canEdit ? `<button class="act-edit" data-id="${id}" data-text="${m.text}"><i class="fas fa-pen text-amber-500"></i></button>` : ""}
-                            ${canDelete ? `<button class="act-del" data-id="${id}"><i class="fas fa-trash text-red-400"></i></button>` : ""}
-                        </div>
-                    `;
-
-                    msgDiv.innerHTML = `
-                        ${replyMarkup}
-                        <span class="text-[9px] font-black text-emerald-400 block mb-0.5 uppercase tracking-wide">${m.senderName}</span>
-                        <p class="text-xs whitespace-pre-wrap break-words pr-2 font-medium leading-relaxed">${m.text}</p>
-                        <div class="flex items-center justify-end gap-1 mt-1 text-[8px] text-muted font-bold self-end">
-                            ${m.edited ? "<span>[EDITADA]</span>" : ""}
-                            <span>${m.time}</span>
-                        </div>
-                        ${actionMenu}
-                    `;
-                    chatMessages.appendChild(msgDiv);
-                });
-
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-
-                document.querySelectorAll(".act-reply").forEach(b => b.addEventListener("click", e => {
-                    activeReplyId = e.currentTarget.getAttribute("data-id");
-                    replyUser.innerText = e.currentTarget.getAttribute("data-user");
-                    replyText.innerText = e.currentTarget.getAttribute("data-text");
-                    replyPreview.classList.remove("hide");
-                }));
-
-                document.querySelectorAll(".act-edit").forEach(b => b.addEventListener("click", e => {
-                    activeEditId = e.currentTarget.getAttribute("data-id");
-                    msgInput.value = e.currentTarget.getAttribute("data-text");
-                    editIndicator.classList.remove("hide");
-                    msgInput.focus();
-                }));
-
-                document.querySelectorAll(".act-del").forEach(b => b.addEventListener("click", e => {
-                    const mid = e.currentTarget.getAttribute("data-id");
-                    remove(ref(db, `rooms/${currentRoom}/messages/${mid}`));
-                }));
-            });
-        }
-
-        async function exitRoomForce() {
-            if (unsubRoomMessages) unsubRoomMessages();
-            if (unsubRoomMeta) unsubRoomMeta();
-            if (unsubRoomUsers) unsubRoomUsers();
-            
-            modalPanel.classList.add("hide");
-            showScreen("lobby");
-            currentRoom = null;
-        }
-
-        btnBackLobby.addEventListener("click", async () => {
-            if (currentRoom) {
-                await remove(ref(db, `rooms/${currentRoom}/users/${currentUser.uid}`));
-            }
-            exitRoomForce();
+        btnChatMenu.addEventListener("click", (e) => {
+            e.stopPropagation();
+            dropdownChat.classList.toggle("hide");
         });
 
-        btnCancelReply.addEventListener("click", () => {
-            activeReplyId = null;
-            replyPreview.classList.add("hide");
+        document.addEventListener("click", () => {
+            dropdownMain.classList.add("hide");
+            dropdownChat.classList.add("hide");
         });
 
-        btnCancelEdit.addEventListener("click", () => {
-            activeEditId = null;
-            msgInput.value = "";
-            editIndicator.classList.add("hide");
+        menuLogout.addEventListener("click", () => {
+            if(unsubContactsList) unsubContactsList();
+            if(unsubChatMessages) unsubChatMessages();
+            signOut(auth);
         });
 
-        btnSend.addEventListener("click", async () => {
-            const text = msgInput.value.trim();
-            if (!text) return;
-
-            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            if (activeEditId) {
-                await update(ref(db, `rooms/${currentRoom}/messages/${activeEditId}`), {
-                    text: text,
-                    edited: true
-                });
-                activeEditId = null;
-                editIndicator.classList.add("hide");
-            } else {
-                let replyPayload = null;
-                if (activeReplyId) {
-                    replyPayload = {
-                        user: replyUser.innerText,
-                        text: replyText.innerText
-                    };
-                }
-
-                const msgRef = push(ref(db, `rooms/${currentRoom}/messages`));
-                await set(msgRef, {
-                    senderId: currentUser.uid,
-                    senderName: currentUser.name,
-                    text: text,
-                    time: timeStr,
-                    replyTo: replyPayload
-                });
-
-                activeReplyId = null;
-                replyPreview.classList.add("hide");
-            }
-
-            msgInput.value = "";
-            msgInput.style.height = "auto";
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+        menuEditProfile.addEventListener("click", () => {
+            imgEditProfileAvatar.src = myAccountData.avatar;
+            inputEditProfileName.value = myAccountData.name;
+            inputEditProfileNumber.value = myAccountData.number;
+            modalEditProfile.classList.remove("hide");
         });
 
-        btnOpenPanel.addEventListener("click", () => modalPanel.classList.remove("hide"));
-        btnClosePanel.addEventListener("click", () => modalPanel.classList.add("hide"));
+        btnCancelEditProfile.addEventListener("click", () => modalEditProfile.classList.add("hide"));
 
-        uploadAvatar.addEventListener("change", (e) => {
+        uploadProfileAvatar.addEventListener("change", (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
-            reader.onloadend = async () => {
-                const base64 = reader.result;
-                currentUser.avatar = base64;
-                
-                await update(ref(db, `users/${currentUser.uid}`), { avatar: base64 });
-                await update(ref(db, `rooms/${currentRoom}/users/${currentUser.uid}`), { avatar: base64 });
-                
-                panelUserAvatar.src = base64;
-                lobbyAvatar.src = base64;
+            reader.onloadend = () => {
+                imgEditProfileAvatar.src = reader.result;
             };
             reader.readAsDataURL(file);
         });
 
-        btnRoomRename.addEventListener("click", async () => {
-            if (userRole !== "ADM") return;
-            const newNameRaw = panelRoomRename.value.trim().toLowerCase();
-            const newName = newNameRaw.replace(/[^a-z0-9_-]/g, "");
-            if (!newName || newName === currentRoom) return;
+        btnSaveEditProfile.addEventListener("click", async () => {
+            const newName = inputEditProfileName.value.trim();
+            if (!newName) return alert("O nome não pode ser vazio!");
 
-            const oldRoom = currentRoom;
-            const oldSnapshot = await get(ref(db, `rooms/${oldRoom}`));
-            
-            if (oldSnapshot.exists()) {
-                const roomData = oldSnapshot.val();
-                roomData.meta.name = newName;
+            myAccountData.name = newName;
+            myAccountData.avatar = imgEditProfileAvatar.src;
+
+            await update(ref(db, `clone_zap/users/${myAccountData.uid}`), {
+                name: newName,
+                avatar: myAccountData.avatar
+            });
+
+            imgMainMyAvatar.src = myAccountData.avatar;
+            modalEditProfile.classList.add("hide");
+        });
+
+        btnTriggerAddContact.addEventListener("click", () => {
+            inputAddContactName.value = "";
+            inputAddContactNumber.value = "";
+            modalAddContact.classList.remove("hide");
+        });
+
+        btnCancelAddContact.addEventListener("click", () => modalAddContact.classList.add("hide"));
+
+        btnSaveAddContact.addEventListener("click", async () => {
+            const contactName = inputAddContactName.value.trim();
+            const contactNum = inputAddContactNumber.value.trim();
+
+            if (!contactName || contactNum.length !== 4) {
+                return alert("Preencha o nome e o número de 4 dígitos corretamente!");
+            }
+
+            if (contactNum === myAccountData.number) {
+                return alert("Você não pode adicionar seu próprio número!");
+            }
+
+            const dirSnap = await get(ref(db, `clone_zap/directory/${contactNum}`));
+            if (!dirSnap.exists()) {
+                return alert("Nenhum usuário encontrado com esse número no Clone Zap!");
+            }
+
+            const targetUid = dirSnap.val();
+
+            await set(ref(db, `clone_zap/contacts/${myAccountData.uid}/${targetUid}`), {
+                uid: targetUid,
+                savedName: contactName,
+                number: contactNum
+            });
+
+            modalAddContact.classList.add("hide");
+        });
+
+        function bindContactsRealtime() {
+            if (unsubContactsList) unsubContactsList();
+
+            unsubContactsList = onValue(ref(db, `clone_zap/contacts/${myAccountData.uid}`), async (snapshot) => {
+                contactsStackList.innerHTML = "";
+                if (!snapshot.exists()) return;
+
+                const contacts = snapshot.val();
+                for (const targetUid of Object.keys(contacts)) {
+                    const cInfo = contacts[targetUid];
+
+                    const profileSnap = await get(ref(db, `clone_zap/users/${targetUid}`));
+                    let dynamicAvatar = "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&h=150&fit=crop";
+                    if (profileSnap.exists()) {
+                        dynamicAvatar = profileSnap.val().avatar;
+                    }
+
+                    const chatID = myAccountData.uid < targetUid ? `${myAccountData.uid}_${targetUid}` : `${targetUid}_${myAccountData.uid}`;
+                    const lastMsgSnap = await get(ref(db, `clone_zap/chats/${chatID}`));
+                    let textPreview = "Nenhuma mensagem trocada";
+                    if (lastMsgSnap.exists()) {
+                        const msgs = Object.values(lastMsgSnap.val());
+                        if (msgs.length > 0) {
+                            textPreview = msgs[msgs.length - 1].text;
+                        }
+                    }
+
+                    const block = document.createElement("div");
+                    block.className = "flex items-center gap-3 p-3 cursor-pointer hover:bg-[#202c33] transition-all";
+                    block.innerHTML = `
+                        <img src="${dynamicAvatar}" class="w-12 h-12 rounded-full object-cover flex-shrink-0">
+                        <div class="flex-1 overflow-hidden">
+                            <div class="flex justify-between items-baseline">
+                                <h4 class="font-bold text-sm text-[#e9edef] truncate">${cInfo.savedName}</h4>
+                                <span class="text-[10px] text-muted font-mono">#${cInfo.number}</span>
+                            </div>
+                            <p class="text-xs text-muted truncate mt-0.5">${textPreview}</p>
+                        </div>
+                    `;
+
+                    block.addEventListener("click", () => openChatWith(targetUid, cInfo.savedName, cInfo.number, dynamicAvatar));
+                    contactsStackList.appendChild(block);
+                }
+            });
+        }
+
+        function openChatWith(targetUid, savedName, number, avatar) {
+            selectedContactUid = targetUid;
+            currentActiveChatId = myAccountData.uid < targetUid ? `${myAccountData.uid}_${targetUid}` : `${targetUid}_${myAccountData.uid}`;
+
+            imgChatTargetAvatar.src = avatar;
+            txtChatTargetName.innerText = savedName;
+            txtChatTargetNumber.innerText = `#${number}`;
+
+            showScreen("private-chat");
+            listenChatMessages();
+        }
+
+        btnChatBack.addEventListener("click", () => {
+            if (unsubChatMessages) unsubChatMessages();
+            showScreen("main-list");
+            bindContactsRealtime();
+        });
+
+        function listenChatMessages() {
+            if (unsubChatMessages) unsubChatMessages();
+
+            unsubChatMessages = onValue(ref(db, `clone_zap/chats/${currentActiveChatId}`), (snapshot) => {
+                chatMessagesContainer.innerHTML = "";
+                if (!snapshot.exists()) return;
+
+                const messages = snapshot.val();
+                Object.values(messages).forEach(m => {
+                    const isMe = m.senderId === myAccountData.uid;
+                    const container = document.createElement("div");
+                    container.className = `max-w-[75%] rounded-lg p-2 px-3 text-xs relative shadow-sm break-words ${isMe ? "wa-outgoing self-end rounded-tr-none" : "wa-incoming self-start rounded-tl-none"}`;
+                    
+                    container.innerHTML = `
+                        <p class="text-white text-[13px] leading-relaxed pr-8">${m.text}</p>
+                        <span class="absolute bottom-1 right-1.5 text-[9px] text-muted font-medium">${m.time}</span>
+                    `;
+                    chatMessagesContainer.appendChild(container);
+                });
+                chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+            });
+        }
+
+        inputChatMessage.addEventListener("keydown", async (e) => {
+            if (e.key === "Enter") {
+                const text = inputChatMessage.value.trim();
+                if (!text) return;
+
+                const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const msgRef = push(ref(db, `clone_zap/chats/${currentActiveChatId}`));
                 
-                await set(ref(db, `rooms/${newName}`), roomData);
-                await remove(ref(db, `rooms/${oldRoom}`));
-                
-                currentRoom = newName;
-                chatRoomTitle.innerText = newName;
-                listenRoom(newName);
-                alert("Canal alterado!");
+                await set(msgRef, {
+                    senderId: myAccountData.uid,
+                    text: text,
+                    time: timeStr
+                });
+
+                inputChatMessage.value = "";
             }
         });
 
-        btnRoomClear.addEventListener("click", async () => {
-            if (userRole !== "ADM") return;
-            if (confirm("Limpar mensagens?")) {
-                await remove(ref(db, `rooms/${currentRoom}/messages`));
+        menuChatEdit.addEventListener("click", () => {
+            inputEditContactName.value = txtChatTargetName.innerText;
+            modalEditContact.classList.remove("hide");
+        });
+
+        btnCancelEditContact.addEventListener("click", () => modalEditContact.classList.add("hide"));
+
+        btnSaveEditContact.addEventListener("click", async () => {
+            const updatedName = inputEditContactName.value.trim();
+            if (!updatedName) return alert("O nome não pode ser vazio!");
+
+            await update(ref(db, `clone_zap/contacts/${myAccountData.uid}/${selectedContactUid}`), {
+                savedName: updatedName
+            });
+
+            txtChatTargetName.innerText = updatedName;
+            modalEditContact.classList.add("hide");
+        });
+
+        menuChatClear.addEventListener("click", async () => {
+            if (confirm("Deseja apagar o histórico dessa conversa para ambos?")) {
+                await remove(ref(db, `clone_zap/chats/${currentActiveChatId}`));
+            }
+        });
+
+        menuChatDelete.addEventListener("click", async () => {
+            if (confirm("Deseja excluir este contato da sua lista?")) {
+                if (unsubChatMessages) unsubChatMessages();
+                await remove(ref(db, `clone_zap/contacts/${myAccountData.uid}/${selectedContactUid}`));
+                showScreen("main-list");
+                bindContactsRealtime();
             }
         });
     </script>
