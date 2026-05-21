@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -21,7 +21,6 @@
             background-color: var(--wa-bg);
             color: var(--wa-text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
         .wa-header { background-color: var(--wa-header); }
         .wa-panel { background-color: var(--wa-panel); }
@@ -34,20 +33,22 @@
             background-color: #0b141a;
             background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
             background-blend-mode: overlay;
-            opacity: 0.3;
+            opacity: 0.06;
         }
+        .safe-top { padding-top: env(safe-area-inset-top); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body class="h-screen w-screen overflow-hidden flex flex-col justify-between antialiased select-none">
+<body class="h-full w-full overflow-hidden bg-[#0b141a] antialiased select-none flex flex-col justify-between">
 
-    <div id="screen-loading" class="absolute inset-0 bg-[#0b141a] z-50 flex flex-col items-center justify-center p-6">
-        <div class="text-[#00a884] text-5xl mb-6 animate-pulse">
+    <div id="screen-loading" class="fixed inset-0 bg-[#0b141a] z-50 flex flex-col items-center justify-center p-6">
+        <div class="text-[#00a884] text-6xl mb-6 animate-pulse">
             <i class="fab fa-whatsapp"></i>
         </div>
-        <div class="w-12 h-1 bg-[#222e35] rounded-full overflow-hidden">
+        <div class="w-16 h-1 bg-[#222e35] rounded-full overflow-hidden">
             <div class="h-full bg-[#00a884] w-1/2 rounded-full animate-[loading_1s_infinite_ease-in-out]"></div>
         </div>
-        <span class="text-xs text-muted mt-3 tracking-widest uppercase">Carregando dados...</span>
+        <span class="text-xs text-muted mt-4 tracking-widest uppercase font-medium">Carregando dados...</span>
     </div>
     <style>
         @keyframes loading {
@@ -56,7 +57,7 @@
         }
     </style>
 
-    <div id="screen-auth" class="hide flex-1 flex flex-col items-center justify-center p-6">
+    <div id="screen-auth" class="hide flex-1 flex flex-col items-center justify-center p-6 safe-top safe-bottom">
         <div class="wa-panel w-full max-w-sm p-6 border wa-border rounded-xl flex flex-col items-center text-center shadow-2xl">
             <div class="w-16 h-16 bg-[#00a884] rounded-full flex items-center justify-center text-white text-3xl mb-4">
                 <i class="fab fa-whatsapp"></i>
@@ -69,7 +70,7 @@
         </div>
     </div>
 
-    <div id="screen-register" class="hide flex-1 flex flex-col items-center justify-center p-6">
+    <div id="screen-register" class="hide flex-1 flex flex-col items-center justify-center p-6 safe-top safe-bottom">
         <div class="wa-panel w-full max-w-sm p-6 border wa-border rounded-xl shadow-2xl">
             <h2 class="text-lg font-bold mb-1 text-center">Configurar Perfil</h2>
             <p class="text-muted text-xs mb-5 text-center">Defina seus dados para identificação na rede</p>
@@ -90,15 +91,15 @@
         </div>
     </div>
 
-    <div id="screen-main-list" class="hide flex-1 flex flex-col h-full w-full max-w-md mx-auto relative wa-panel border-x wa-border">
-        <header class="wa-header h-16 px-4 flex items-center justify-between border-b wa-border">
+    <div id="screen-main-list" class="hide flex-1 flex flex-col h-full w-full max-w-xl mx-auto relative wa-panel md:border-x wa-border safe-top safe-bottom">
+        <header class="wa-header h-16 px-4 flex items-center justify-between border-b wa-border flex-shrink-0">
             <h1 class="text-xl font-bold text-[#e9edef]">WhatsApp</h1>
             <div class="flex items-center gap-4 relative">
                 <img id="main-my-avatar" src="" class="w-9 h-9 rounded-full object-cover border wa-border">
                 <button id="btn-main-menu" class="text-muted hover:text-white p-1 text-lg">
                     <i class="fas fa-ellipsis-v"></i>
                 </button>
-                <div id="dropdown-main" class="hide absolute top-10 right-0 w-44 wa-header border wa-border rounded shadow-xl z-30 py-1 text-sm">
+                <div id="dropdown-main" class="hide absolute top-12 right-0 w-44 wa-header border wa-border rounded shadow-xl z-30 py-1 text-sm">
                     <button id="menu-edit-profile" class="w-full text-left px-4 py-2.5 hover:bg-[#111b21]">Editar Perfil</button>
                     <button id="menu-logout" class="w-full text-left px-4 py-2.5 hover:bg-[#111b21] text-red-400">Sair da Conta</button>
                 </div>
@@ -112,17 +113,17 @@
         </button>
     </div>
 
-    <div id="screen-private-chat" class="hide flex-1 flex flex-col h-full w-full max-w-md mx-auto relative wa-panel border-x wa-border">
-        <header class="wa-header h-14 px-3 flex items-center justify-between border-b wa-border z-10">
-            <div class="flex items-center gap-2 overflow-hidden flex-1">
-                <img id="chat-target-avatar" src="" class="w-9 h-9 rounded-full object-cover flex-shrink-0">
-                <div class="overflow-hidden flex flex-col max-w-[120px]">
+    <div id="screen-private-chat" class="hide flex-1 flex flex-col h-full w-full max-w-xl mx-auto relative wa-panel md:border-x wa-border safe-top safe-bottom">
+        <header class="wa-header h-16 px-3 flex items-center justify-between border-b wa-border flex-shrink-0 z-10">
+            <div class="flex items-center gap-3 overflow-hidden flex-1">
+                <img id="chat-target-avatar" src="" class="w-10 h-10 rounded-full object-cover flex-shrink-0">
+                <div class="overflow-hidden flex flex-col">
                     <span id="chat-target-name" class="font-bold text-sm text-[#e9edef] truncate">Contato</span>
                     <span id="chat-target-number" class="text-[10px] text-muted block font-mono">#0000</span>
                 </div>
             </div>
             
-            <div class="flex items-center gap-2.5 text-muted text-base">
+            <div class="flex items-center gap-3 text-muted text-base">
                 <button id="header-btn-edit" title="Editar nome" class="hover:text-white p-1">
                     <i class="fas fa-pen text-xs"></i>
                 </button>
@@ -139,19 +140,19 @@
             </div>
         </header>
 
-        <div class="flex-1 relative overflow-hidden">
+        <div class="flex-1 relative overflow-hidden bg-[#0b141a]">
             <div class="absolute inset-0 chat-bg"></div>
             <div id="chat-messages-container" class="absolute inset-0 p-4 overflow-y-auto space-y-2 flex flex-col z-10"></div>
         </div>
 
-        <div class="p-2 bg-[#111b21] flex items-center gap-2 z-10">
-            <div class="flex-1 bg-[#202c33] rounded-lg p-2 min-h-[40px] flex items-center">
-                <input type="text" id="chat-message-input" placeholder="Mensagem" class="w-full bg-transparent outline-none px-2 text-sm text-white placeholder:text-[#8696a0]">
+        <div class="p-3 bg-[#202c33] flex items-center gap-2 flex-shrink-0 z-10 border-t wa-border pb-4 sm:pb-3">
+            <div class="flex-1 bg-[#2a3942] rounded-lg p-2 min-h-[42px] flex items-center shadow-inner">
+                <input type="text" id="chat-message-input" placeholder="Digite uma mensagem" class="w-full bg-transparent outline-none px-3 text-sm text-white placeholder:text-[#8696a0]">
             </div>
         </div>
     </div>
 
-    <div id="modal-add-contact" class="hide absolute inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
+    <div id="modal-add-contact" class="hide fixed inset-0 bg-black/80 z-40 flex items-center justify-center p-4">
         <div class="w-full max-w-xs wa-panel border wa-border p-5 rounded-xl space-y-4 shadow-2xl">
             <h3 class="font-bold text-sm uppercase tracking-wider text-[#00a884]">Adicionar Contato</h3>
             <div class="space-y-3">
@@ -165,7 +166,7 @@
         </div>
     </div>
 
-    <div id="modal-edit-profile" class="hide absolute inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
+    <div id="modal-edit-profile" class="hide fixed inset-0 bg-black/80 z-40 flex items-center justify-center p-4">
         <div class="w-full max-w-xs wa-panel border wa-border p-5 rounded-xl space-y-4 shadow-2xl">
             <h3 class="font-bold text-sm uppercase tracking-wider text-[#00a884]">Editar Perfil</h3>
             
@@ -197,7 +198,7 @@
         </div>
     </div>
 
-    <div id="modal-edit-contact" class="hide absolute inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
+    <div id="modal-edit-contact" class="hide fixed inset-0 bg-black/80 z-40 flex items-center justify-center p-4">
         <div class="w-full max-w-xs wa-panel border wa-border p-5 rounded-xl space-y-4 shadow-2xl">
             <h3 class="font-bold text-sm uppercase tracking-wider text-[#00a884]">Editar Contato</h3>
             <input type="text" id="edit-contact-name" placeholder="Apelido do contato" class="w-full p-2.5 text-xs border wa-border bg-[#202c33] font-medium text-white outline-none rounded-lg">
