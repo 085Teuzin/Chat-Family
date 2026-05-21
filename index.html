@@ -359,33 +359,48 @@
             });
         }
 
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                currentUser = user;
-                const savedName = localStorage.getItem('chat_display_name') || loginNameInput.value.trim();
-                
-                if (savedName) {
-                    localStorage.setItem('chat_display_name', savedName);
-                    await db.collection('users').doc(user.uid).set({
-                        displayName: savedName,
-                        email: user.email,
-                        photoURL: user.photoURL
-                    }, { merge: true });
-                    currentUser.customName = savedName;
-                    loadRoomsScreen();
-                } else {
-                    const userDoc = await db.collection('users').doc(user.uid).get();
-                    if (userDoc.exists && userDoc.data().displayName) {
-                        currentUser.customName = userDoc.data().displayName;
-                        localStorage.setItem('chat_display_name', currentUser.customName);
-                        loadRoomsScreen();
-                    } else {
-                        auth.signOut();
-                        localStorage.removeItem('chat_display_name');
-                        showScreen('login');
-                    }
+        async function processUserLogin(user) {
+            currentUser = user;
+            let finalName = sessionStorage.getItem('pending_display_name') || localStorage.getItem('chat_display_name');
+
+            if (!finalName) {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists && userDoc.data().displayName) {
+                    finalName = userDoc.data().displayName;
                 }
+            }
+
+            if (finalName) {
+                localStorage.setItem('chat_display_name', finalName);
+                sessionStorage.removeItem('pending_display_name');
+                await db.collection('users').doc(user.uid).set({
+                    displayName: finalName,
+                    email: user.email || '',
+                    photoURL: user.photoURL || ''
+                }, { merge: true });
+                
+                currentUser.customName = finalName;
+                loadRoomsScreen();
             } else {
+                auth.signOut();
+                localStorage.removeItem('chat_display_name');
+                showScreen('login');
+            }
+        }
+
+        auth.getRedirectResult().then((result) => {
+            if (result.user) {
+                processUserLogin(result.user);
+            }
+        }).catch((error) => {
+            console.error("Erro no retorno do redirecionamento: ", error);
+            alert("Falha na autenticação. Tente novamente.");
+        });
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user && !currentUser) {
+                processUserLogin(user);
+            } else if (!user) {
                 currentUser = null;
                 showScreen('login');
             }
@@ -394,18 +409,13 @@
         googleLoginBtn.addEventListener('click', () => {
             const name = loginNameInput.value.trim();
             if (!name) return;
-            localStorage.setItem('chat_display_name', name);
+            sessionStorage.setItem('pending_display_name', name);
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithRedirect(provider);
         });
 
-        auth.getRedirectResult().catch((error) => {
-            console.error("Erro no login: ", error);
-            alert("Erro ao fazer login. Tente novamente.");
-        });
-
         function loadRoomsScreen() {
-            document.getElementById('user-avatar-rooms').src = currentUser.photoURL || '';
+            document.getElementById('user-avatar-rooms').src = currentUser.photoURL || 'https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_64dp.png';
             showScreen('rooms');
         }
 
@@ -442,7 +452,7 @@
         function enterChatRoom(roomId, adminUid) {
             currentRoomId = roomId;
             currentRoomAdmin = adminUid;
-            document.getElementById('user-avatar-chat').src = currentUser.photoURL || '';
+            document.getElementById('user-avatar-chat').src = currentUser.photoURL || 'https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_64dp.png';
             showScreen('chat');
 
             unsubscribeRoom = db.collection('rooms').doc(roomId).onSnapshot(doc => {
@@ -577,9 +587,9 @@
         const profileModal = document.getElementById('modal-profile');
         const openProfileTrigger = (imgId) => {
             document.getElementById(imgId).addEventListener('click', () => {
-                document.getElementById('modal-user-img').src = currentUser.photoURL || '';
+                document.getElementById('modal-user-img').src = currentUser.photoURL || 'https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_64dp.png';
                 document.getElementById('modal-user-name').innerText = currentUser.customName;
-                document.getElementById('modal-user-email').innerText = currentUser.email;
+                document.getElementById('modal-user-email').innerText = currentUser.email || 'Sem e-mail';
                 profileModal.style.display = 'flex';
             });
         };
@@ -589,6 +599,7 @@
         document.getElementById('close-profile').addEventListener('click', () => profileModal.style.display = 'none');
         document.getElementById('btn-logout').addEventListener('click', () => { 
             localStorage.removeItem('chat_display_name');
+            sessionStorage.removeItem('pending_display_name');
             auth.signOut(); 
             profileModal.style.display = 'none'; 
         });
@@ -645,7 +656,7 @@
             const newName = document.getElementById('new-room-name').value.trim().toLowerCase();
             if (!newName) return alert('Insira um nome válido!');
             await db.collection('rooms').doc(currentRoomId).update({ name: newName });
-            alert('Nome alteredo com sucesso!');
+            alert('Nome alterado com sucesso!');
             roomModal.style.display = 'none';
         });
 
