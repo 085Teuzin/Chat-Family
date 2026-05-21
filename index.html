@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Família Web App</title>
-    <!-- Usando os módulos ES oficiais e modernos do Firebase v10 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { 
@@ -44,7 +43,6 @@
             measurementId: "G-TLJ87EYNFP"
         };
 
-        // Inicializa o Firebase Modular
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -363,7 +361,6 @@
     </div>
 
     <script type="module">
-        // Aguarda a injeção do contexto do Firebase no window para rodar a aplicação com segurança
         const interval = setInterval(() => {
             if (window.firebaseCtx) {
                 clearInterval(interval);
@@ -409,10 +406,18 @@
                 let finalName = sessionStorage.getItem('pending_display_name') || localStorage.getItem('chat_display_name');
 
                 if (!finalName) {
-                    const userDoc = await getDoc(doc(db, 'users', user.uid));
-                    if (userDoc.exists() && userDoc.data().displayName) {
-                        finalName = userDoc.data().displayName;
+                    try {
+                        const userDoc = await getDoc(doc(db, 'users', user.uid));
+                        if (userDoc.exists() && userDoc.data().displayName) {
+                            finalName = userDoc.data().displayName;
+                        }
+                    } catch (e) {
+                        console.error(e);
                     }
+                }
+
+                if (!finalName && user.displayName) {
+                    finalName = user.displayName;
                 }
 
                 if (finalName) {
@@ -434,13 +439,12 @@
                 }
             }
 
-            // Captura o resultado do redirecionamento do Google pós-recarregamento
             getRedirectResult(auth).then((result) => {
                 if (result && result.user) {
                     processUserLogin(result.user);
                 }
             }).catch((error) => {
-                console.error("Erro no redirect: ", error);
+                console.error(error);
                 alert("Erro ao processar login do Google. Tente novamente.");
             });
 
@@ -476,7 +480,6 @@
                 const roomDoc = await getDoc(roomRef);
 
                 if (!roomDoc.exists()) {
-                    // Fluxo ADM: Sala criada do zero
                     await setDoc(roomRef, {
                         name: rName,
                         password: rPass,
@@ -485,7 +488,6 @@
                     });
                     enterChatRoom(rName, currentUser.uid);
                 } else {
-                    // Fluxo Membro: Sala existe, valida a senha
                     const roomData = roomDoc.data();
                     if (roomData.password === rPass) {
                         let updateData = {};
@@ -562,7 +564,7 @@
                         updateData[`participants.${currentUser.uid}`] = deleteField();
                         await updateDoc(roomRef, updateData);
                     } catch (e) {
-                        console.log("Remoção ao sair tratada ou sala já limpa.");
+                        console.log(e);
                     }
                 }
 
@@ -606,8 +608,8 @@
 
                 const menu = document.getElementById('message-menu');
                 
-                document.getElementById('menu-edit').style.style.display = isMe ? 'block' : 'none';
-                document.getElementById('menu-delete').style.style.display = (isMe || isAmIAdmin) ? 'block' : 'none';
+                document.getElementById('menu-edit').style.display = isMe ? 'block' : 'none';
+                document.getElementById('menu-delete').style.display = (isMe || isAmIAdmin) ? 'block' : 'none';
 
                 menu.style.display = 'flex';
 
