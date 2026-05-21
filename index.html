@@ -67,17 +67,33 @@
 
         .auth-container, .rooms-container {
             margin: auto;
-            width: 90%;
-            max-width: 400px;
-            padding: 30px;
+            width: 85%;
+            max-width: 340px;
+            padding: 25px;
             background-color: var(--bg-surface);
             border-radius: 12px;
             text-align: center;
             border: 1px solid var(--border-color);
+            position: relative;
         }
 
-        .auth-container h1, .rooms-container h2 { margin-bottom: 15px; }
-        .auth-container p { color: var(--text-muted); margin-bottom: 25px; }
+        .auth-container h1 { 
+            font-size: 24px; 
+            font-weight: 600; 
+            margin-bottom: 20px; 
+            letter-spacing: -0.5px;
+        }
+
+        .credits {
+            position: absolute;
+            bottom: -40px;
+            left: 0;
+            width: 100%;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+            opacity: 0.6;
+        }
 
         input[type="text"], input[type="password"] {
             width: 100%;
@@ -88,9 +104,11 @@
             background-color: var(--bg-card);
             color: var(--text-main);
             font-size: 16px;
+            outline: none;
         }
 
         .btn-primary { width: 100%; padding: 14px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-primary:disabled { background-color: var(--border-color); color: var(--text-muted); cursor: not-allowed; opacity: 0.5; }
         .btn-secondary { width: 100%; padding: 10px; background-color: var(--border-color); color: var(--text-main); border: none; border-radius: 6px; margin-top: 10px; cursor: pointer;}
         .btn-danger { width: 100%; padding: 10px; background-color: var(--danger); color: white; border: none; border-radius: 6px; margin-top: 10px; font-weight: bold; cursor: pointer;}
         .btn-icon { background: none; border: none; color: var(--text-main); font-size: 24px; cursor: pointer; padding: 0 10px; }
@@ -217,16 +235,9 @@
     <div id="screen-login" class="screen active">
         <div class="auth-container">
             <h1>Família Chat</h1>
-            <p>Faça login para acessar o aplicativo da nossa família.</p>
-            <button id="btn-google-login" class="btn-primary">Entrar com o Google</button>
-        </div>
-    </div>
-
-    <div id="screen-nickname" class="screen">
-        <div class="auth-container">
-            <h2>Como você quer ser chamado?</h2>
-            <input type="text" id="input-nickname" placeholder="Seu apelido ou nome...">
-            <button id="btn-save-nickname" class="btn-primary">Continuar</button>
+            <input type="text" id="input-login-name" placeholder="Como quer ser chamado?">
+            <button id="btn-google-login" class="btn-primary" disabled>Entrar com o Google</button>
+            <div class="credits">Made By: @085_Teuzinnn</div>
         </div>
     </div>
 
@@ -331,10 +342,16 @@
 
         const screens = {
             login: document.getElementById('screen-login'),
-            nickname: document.getElementById('screen-nickname'),
             rooms: document.getElementById('screen-rooms'),
             chat: document.getElementById('screen-chat')
         };
+
+        const loginNameInput = document.getElementById('input-login-name');
+        const googleLoginBtn = document.getElementById('btn-google-login');
+
+        loginNameInput.addEventListener('input', () => {
+            googleLoginBtn.disabled = loginNameInput.value.trim() === '';
+        });
 
         function showScreen(screenKey) {
             Object.keys(screens).forEach(key => {
@@ -345,12 +362,28 @@
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 currentUser = user;
-                const userDoc = await db.collection('users').doc(user.uid).get();
-                if (userDoc.exists && userDoc.data().displayName) {
-                    currentUser.customName = userDoc.data().displayName;
+                const savedName = localStorage.getItem('chat_display_name') || loginNameInput.value.trim();
+                
+                if (savedName) {
+                    localStorage.setItem('chat_display_name', savedName);
+                    await db.collection('users').doc(user.uid).set({
+                        displayName: savedName,
+                        email: user.email,
+                        photoURL: user.photoURL
+                    }, { merge: true });
+                    currentUser.customName = savedName;
                     loadRoomsScreen();
                 } else {
-                    showScreen('nickname');
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    if (userDoc.exists && userDoc.data().displayName) {
+                        currentUser.customName = userDoc.data().displayName;
+                        localStorage.setItem('chat_display_name', currentUser.customName);
+                        loadRoomsScreen();
+                    } else {
+                        auth.signOut();
+                        localStorage.removeItem('chat_display_name');
+                        showScreen('login');
+                    }
                 }
             } else {
                 currentUser = null;
@@ -358,26 +391,21 @@
             }
         });
 
-        document.getElementById('btn-google-login').addEventListener('click', () => {
+        googleLoginBtn.addEventListener('click', () => {
+            const name = loginNameInput.value.trim();
+            if (!name) return;
+            localStorage.setItem('chat_display_name', name);
             const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider);
+            auth.signInWithRedirect(provider);
         });
 
-        document.getElementById('btn-save-nickname').addEventListener('click', async () => {
-            const name = document.getElementById('input-nickname').value.trim();
-            if (!name) return alert('Insira um nome válido!');
-            
-            await db.collection('users').doc(currentUser.uid).set({
-                displayName: name,
-                email: currentUser.email,
-                photoURL: currentUser.photoURL
-            });
-            currentUser.customName = name;
-            loadRoomsScreen();
+        auth.getRedirectResult().catch((error) => {
+            console.error("Erro no login: ", error);
+            alert("Erro ao fazer login. Tente novamente.");
         });
 
         function loadRoomsScreen() {
-            document.getElementById('user-avatar-rooms').src = currentUser.photoURL;
+            document.getElementById('user-avatar-rooms').src = currentUser.photoURL || '';
             showScreen('rooms');
         }
 
@@ -414,7 +442,7 @@
         function enterChatRoom(roomId, adminUid) {
             currentRoomId = roomId;
             currentRoomAdmin = adminUid;
-            document.getElementById('user-avatar-chat').src = currentUser.photoURL;
+            document.getElementById('user-avatar-chat').src = currentUser.photoURL || '';
             showScreen('chat');
 
             unsubscribeRoom = db.collection('rooms').doc(roomId).onSnapshot(doc => {
@@ -549,7 +577,7 @@
         const profileModal = document.getElementById('modal-profile');
         const openProfileTrigger = (imgId) => {
             document.getElementById(imgId).addEventListener('click', () => {
-                document.getElementById('modal-user-img').src = currentUser.photoURL;
+                document.getElementById('modal-user-img').src = currentUser.photoURL || '';
                 document.getElementById('modal-user-name').innerText = currentUser.customName;
                 document.getElementById('modal-user-email').innerText = currentUser.email;
                 profileModal.style.display = 'flex';
@@ -559,7 +587,11 @@
         openProfileTrigger('user-avatar-chat');
 
         document.getElementById('close-profile').addEventListener('click', () => profileModal.style.display = 'none');
-        document.getElementById('btn-logout').addEventListener('click', () => { auth.signOut(); profileModal.style.display = 'none'; });
+        document.getElementById('btn-logout').addEventListener('click', () => { 
+            localStorage.removeItem('chat_display_name');
+            auth.signOut(); 
+            profileModal.style.display = 'none'; 
+        });
 
         document.getElementById('btn-toggle-theme').addEventListener('click', () => {
             if (document.body.classList.contains('theme-dark')) {
@@ -613,7 +645,7 @@
             const newName = document.getElementById('new-room-name').value.trim().toLowerCase();
             if (!newName) return alert('Insira um nome válido!');
             await db.collection('rooms').doc(currentRoomId).update({ name: newName });
-            alert('Nome alterado com sucesso!');
+            alert('Nome alteredo com sucesso!');
             roomModal.style.display = 'none';
         });
 
