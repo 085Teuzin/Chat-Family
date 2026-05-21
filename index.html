@@ -4,9 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Família Web App</title>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- Usando os módulos ES oficiais e modernos do Firebase v10 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithRedirect, 
+            getRedirectResult, 
+            onAuthStateChanged, 
+            GoogleAuthProvider,
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            updateDoc, 
+            collection, 
+            addDoc, 
+            onSnapshot, 
+            orderBy, 
+            query, 
+            deleteDoc, 
+            getDocs, 
+            writeBatch,
+            serverTimestamp,
+            deleteField
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDthwqD0CGFwDov-zfO-Hx6TD_y3lHsnoc",
+            authDomain: "teuzin-apps.firebaseapp.com",
+            databaseURL: "https://teuzin-apps-default-rtdb.firebaseio.com",
+            projectId: "teuzin-apps",
+            storageBucket: "teuzin-apps.firebasestorage.app",
+            messagingSenderId: "695505471506",
+            appId: "1:695505471506:web:efe322e605af4a30bfb0cb",
+            measurementId: "G-TLJ87EYNFP"
+        };
+
+        // Inicializa o Firebase Modular
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.firebaseCtx = { auth, db, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, orderBy, query, deleteDoc, getDocs, writeBatch, serverTimestamp, deleteField };
+    </script>
+
     <style>
         .theme-dark {
             --bg-main: #000000;
@@ -243,23 +288,24 @@
 
     <div id="screen-rooms" class="screen">
         <div class="header-bar">
-            <span class="app-title">Salas</span>
+            <span class="app-title" style="font-weight: bold; font-size: 20px;">Salas</span>
             <img id="user-avatar-rooms" class="avatar" alt="Perfil">
         </div>
         <div class="rooms-container">
-            <h2>Entrar ou Criar Sala</h2>
+            <h2>Acessar Sala</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Se a sala não existir, ela será criada e você será o ADM!</p>
             <input type="text" id="room-name" placeholder="Nome da sala...">
             <input type="password" id="room-pass" placeholder="Senha da sala...">
-            <button id="btn-enter-room" class="btn-primary">Acessar Sala</button>
+            <button id="btn-enter-room" class="btn-primary">Entrar ou Criar Sala</button>
         </div>
     </div>
 
     <div id="screen-chat" class="screen">
         <div class="header-bar">
-            <button id="btn-leave-room" class="btn-icon">←</button>
+            <button id="btn-leave-room" class="btn-icon">🚪</button>
             <div class="room-info-header" id="btn-room-details">
-                <span id="chat-room-title">Nome da Sala</span>
-                <span id="chat-room-status">Clique para detalhes</span>
+                <span id="chat-room-title" style="font-weight: bold;">Nome da Sala</span>
+                <span id="chat-room-status">Clique para ver membros</span>
             </div>
             <img id="user-avatar-chat" class="avatar" alt="Perfil">
         </div>
@@ -305,7 +351,7 @@
             <h3 id="info-room-name">Sala</h3>
             
             <div id="adm-controls" style="display: none; margin-top: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
-                <h4 style="margin-bottom: 10px;">Painel do Administrador</h4>
+                <h4 style="margin-bottom: 10px; color: var(--primary);">Painel do Administrador</h4>
                 <input type="text" id="new-room-name" placeholder="Mudar nome da sala">
                 <button id="btn-rename-room" class="btn-secondary">Salvar Novo Nome</button>
                 <button id="btn-clear-chat" class="btn-danger">Limpar Toda a Conversa</button>
@@ -316,170 +362,172 @@
         </div>
     </div>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDthwqD0CGFwDov-zfO-Hx6TD_y3lHsnoc",
-            authDomain: "teuzin-apps.firebaseapp.com",
-            databaseURL: "https://teuzin-apps-default-rtdb.firebaseio.com",
-            projectId: "teuzin-apps",
-            storageBucket: "teuzin-apps.firebasestorage.app",
-            messagingSenderId: "695505471506",
-            appId: "1:695505471506:web:efe322e605af4a30bfb0cb",
-            measurementId: "G-TLJ87EYNFP"
-        };
+    <script type="module">
+        // Aguarda a injeção do contexto do Firebase no window para rodar a aplicação com segurança
+        const interval = setInterval(() => {
+            if (window.firebaseCtx) {
+                clearInterval(interval);
+                initApp();
+            }
+        }, 50);
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        function initApp() {
+            const { 
+                auth, db, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut,
+                doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, orderBy, query, deleteDoc, getDocs, writeBatch, serverTimestamp, deleteField
+            } = window.firebaseCtx;
 
-        let currentUser = null;
-        let currentRoomId = null;
-        let currentRoomAdmin = null;
-        let selectedMessageId = null; 
-        let replyMessageData = null; 
-        let unsubscribeMessages = null;
-        let unsubscribeRoom = null;
+            let currentUser = null;
+            let currentRoomId = null;
+            let currentRoomAdmin = null;
+            let selectedMessageId = null; 
+            let replyMessageData = null; 
+            let unsubscribeMessages = null;
+            let unsubscribeRoom = null;
 
-        const screens = {
-            login: document.getElementById('screen-login'),
-            rooms: document.getElementById('screen-rooms'),
-            chat: document.getElementById('screen-chat')
-        };
+            const screens = {
+                login: document.getElementById('screen-login'),
+                rooms: document.getElementById('screen-rooms'),
+                chat: document.getElementById('screen-chat')
+            };
 
-        const loginNameInput = document.getElementById('input-login-name');
-        const googleLoginBtn = document.getElementById('btn-google-login');
+            const loginNameInput = document.getElementById('input-login-name');
+            const googleLoginBtn = document.getElementById('btn-google-login');
 
-        loginNameInput.addEventListener('input', () => {
-            googleLoginBtn.disabled = loginNameInput.value.trim() === '';
-        });
-
-        function showScreen(screenKey) {
-            Object.keys(screens).forEach(key => {
-                screens[key].classList.toggle('active', key === screenKey);
+            loginNameInput.addEventListener('input', () => {
+                googleLoginBtn.disabled = loginNameInput.value.trim() === '';
             });
-        }
 
-        async function processUserLogin(user) {
-            currentUser = user;
-            let finalName = sessionStorage.getItem('pending_display_name') || localStorage.getItem('chat_display_name');
-
-            if (!finalName) {
-                const userDoc = await db.collection('users').doc(user.uid).get();
-                if (userDoc.exists && userDoc.data().displayName) {
-                    finalName = userDoc.data().displayName;
-                }
-            }
-
-            if (finalName) {
-                localStorage.setItem('chat_display_name', finalName);
-                sessionStorage.removeItem('pending_display_name');
-                await db.collection('users').doc(user.uid).set({
-                    displayName: finalName,
-                    email: user.email || '',
-                    photoURL: user.photoURL || ''
-                }, { merge: true });
-                
-                currentUser.customName = finalName;
-                loadRoomsScreen();
-            } else {
-                auth.signOut();
-                localStorage.removeItem('chat_display_name');
-                showScreen('login');
-            }
-        }
-
-        auth.getRedirectResult().then((result) => {
-            if (result.user) {
-                processUserLogin(result.user);
-            }
-        }).catch((error) => {
-            console.error("Erro no retorno do redirecionamento: ", error);
-            alert("Falha na autenticação. Tente novamente.");
-        });
-
-        auth.onAuthStateChanged(async (user) => {
-            if (user && !currentUser) {
-                processUserLogin(user);
-            } else if (!user) {
-                currentUser = null;
-                showScreen('login');
-            }
-        });
-
-        googleLoginBtn.addEventListener('click', () => {
-            const name = loginNameInput.value.trim();
-            if (!name) return;
-            sessionStorage.setItem('pending_display_name', name);
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithRedirect(provider);
-        });
-
-        function loadRoomsScreen() {
-            document.getElementById('user-avatar-rooms').src = currentUser.photoURL || 'https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_64dp.png';
-            showScreen('rooms');
-        }
-
-        document.getElementById('btn-enter-room').addEventListener('click', async () => {
-            const rName = document.getElementById('room-name').value.trim().toLowerCase();
-            const rPass = document.getElementById('room-pass').value.trim();
-
-            if (!rName || !rPass) return alert('Preencha os dados da sala!');
-
-            const roomRef = db.collection('rooms').doc(rName);
-            const roomDoc = await roomRef.get();
-
-            if (!roomDoc.exists) {
-                await roomRef.set({
-                    name: rName,
-                    password: rPass,
-                    admin: currentUser.uid,
-                    participants: { [currentUser.uid]: currentUser.customName }
+            function showScreen(screenKey) {
+                Object.keys(screens).forEach(key => {
+                    screens[key].classList.toggle('active', key === screenKey);
                 });
-                enterChatRoom(rName, currentUser.uid);
-            } else {
-                const roomData = roomDoc.data();
-                if (roomData.password === rPass) {
-                    let updateData = {};
-                    updateData[`participants.${currentUser.uid}`] = currentUser.customName;
-                    await roomRef.update(updateData);
-                    enterChatRoom(rName, roomData.admin);
+            }
+
+            async function processUserLogin(user) {
+                currentUser = user;
+                let finalName = sessionStorage.getItem('pending_display_name') || localStorage.getItem('chat_display_name');
+
+                if (!finalName) {
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    if (userDoc.exists() && userDoc.data().displayName) {
+                        finalName = userDoc.data().displayName;
+                    }
+                }
+
+                if (finalName) {
+                    localStorage.setItem('chat_display_name', finalName);
+                    sessionStorage.removeItem('pending_display_name');
+                    
+                    await setDoc(doc(db, 'users', user.uid), {
+                        displayName: finalName,
+                        email: user.email || '',
+                        photoURL: user.photoURL || ''
+                    }, { merge: true });
+                    
+                    currentUser.customName = finalName;
+                    loadRoomsScreen();
                 } else {
-                    alert('Senha incorreta para esta sala!');
+                    await signOut(auth);
+                    localStorage.removeItem('chat_display_name');
+                    showScreen('login');
                 }
             }
-        });
 
-        function enterChatRoom(roomId, adminUid) {
-            currentRoomId = roomId;
-            currentRoomAdmin = adminUid;
-            document.getElementById('user-avatar-chat').src = currentUser.photoURL || 'https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_64dp.png';
-            showScreen('chat');
+            // Captura o resultado do redirecionamento do Google pós-recarregamento
+            getRedirectResult(auth).then((result) => {
+                if (result && result.user) {
+                    processUserLogin(result.user);
+                }
+            }).catch((error) => {
+                console.error("Erro no redirect: ", error);
+                alert("Erro ao processar login do Google. Tente novamente.");
+            });
 
-            unsubscribeRoom = db.collection('rooms').doc(roomId).onSnapshot(doc => {
-                if (!doc.exists) return leaveRoom();
-                const data = doc.data();
-                currentRoomAdmin = data.admin;
-                document.getElementById('chat-room-title').innerText = data.name.toUpperCase();
-                
-                if (!data.participants[currentUser.uid]) {
-                    alert('Você foi removido desta sala.');
-                    leaveRoom();
+            onAuthStateChanged(auth, async (user) => {
+                if (user && !currentUser) {
+                    processUserLogin(user);
+                } else if (!user) {
+                    currentUser = null;
+                    showScreen('login');
                 }
             });
 
-            unsubscribeMessages = db.collection('rooms').doc(roomId).collection('messages')
-                .orderBy('timestamp', 'asc')
-                .onSnapshot(snapshot => {
+            googleLoginBtn.addEventListener('click', async () => {
+                const name = loginNameInput.value.trim();
+                if (!name) return;
+                sessionStorage.setItem('pending_display_name', name);
+                const provider = new GoogleAuthProvider();
+                await signInWithRedirect(auth, provider);
+            });
+
+            function loadRoomsScreen() {
+                document.getElementById('user-avatar-rooms').src = currentUser.photoURL || 'https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_64dp.png';
+                showScreen('rooms');
+            }
+
+            document.getElementById('btn-enter-room').addEventListener('click', async () => {
+                const rName = document.getElementById('room-name').value.trim().toLowerCase();
+                const rPass = document.getElementById('room-pass').value.trim();
+
+                if (!rName || !rPass) return alert('Preencha os dados da sala!');
+
+                const roomRef = doc(db, 'rooms', rName);
+                const roomDoc = await getDoc(roomRef);
+
+                if (!roomDoc.exists()) {
+                    // Fluxo ADM: Sala criada do zero
+                    await setDoc(roomRef, {
+                        name: rName,
+                        password: rPass,
+                        admin: currentUser.uid,
+                        participants: { [currentUser.uid]: currentUser.customName }
+                    });
+                    enterChatRoom(rName, currentUser.uid);
+                } else {
+                    // Fluxo Membro: Sala existe, valida a senha
+                    const roomData = roomDoc.data();
+                    if (roomData.password === rPass) {
+                        let updateData = {};
+                        updateData[`participants.${currentUser.uid}`] = currentUser.customName;
+                        await updateDoc(roomRef, updateData);
+                        enterChatRoom(rName, roomData.admin);
+                    } else {
+                        alert('Senha incorreta para esta sala!');
+                    }
+                }
+            });
+
+            function enterChatRoom(roomId, adminUid) {
+                currentRoomId = roomId;
+                currentRoomAdmin = adminUid;
+                document.getElementById('user-avatar-chat').src = currentUser.photoURL || 'https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_64dp.png';
+                showScreen('chat');
+
+                unsubscribeRoom = onSnapshot(doc(db, 'rooms', roomId), (snapshot) => {
+                    if (!snapshot.exists()) return leaveRoom();
+                    const data = snapshot.data();
+                    currentRoomAdmin = data.admin;
+                    document.getElementById('chat-room-title').innerText = data.name.toUpperCase();
+                    
+                    if (!data.participants[currentUser.uid]) {
+                        alert('Você foi removido ou a sala foi fechada.');
+                        leaveRoom();
+                    }
+                });
+
+                const messagesQuery = query(collection(db, 'rooms', roomId, 'messages'), orderBy('timestamp', 'asc'));
+                unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
                     const container = document.getElementById('chat-messages');
                     container.innerHTML = '';
                     
-                    snapshot.forEach(doc => {
-                        const msg = doc.data();
+                    snapshot.forEach(docSnap => {
+                        const msg = docSnap.data();
                         const isMe = msg.senderId === currentUser.uid;
                         
                         const block = document.createElement('div');
                         block.className = `msg-block ${isMe ? 'me' : 'other'}`;
-                        block.dataset.id = doc.id;
+                        block.dataset.id = docSnap.id;
                         block.dataset.sender = msg.senderId;
                         block.dataset.text = msg.text;
                         block.dataset.author = msg.senderName;
@@ -501,175 +549,188 @@
                     });
                     container.scrollTop = container.scrollHeight;
                 });
-        }
-
-        function leaveRoom() {
-            if (unsubscribeMessages) unsubscribeMessages();
-            if (unsubscribeRoom) unsubscribeRoom();
-            currentRoomId = null;
-            loadRoomsScreen();
-        }
-        document.getElementById('btn-leave-room').addEventListener('click', leaveRoom);
-
-        document.getElementById('btn-send').addEventListener('click', sendTextMessage);
-        document.getElementById('chat-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendTextMessage(); });
-
-        async function sendTextMessage() {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if (!text || !currentRoomId) return;
-
-            const msgPayload = {
-                senderId: currentUser.uid,
-                senderName: currentUser.customName,
-                text: text,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
-            if (replyMessageData) {
-                msgPayload.replyTo = replyMessageData;
-                cancelReply();
             }
 
-            await db.collection('rooms').doc(currentRoomId).collection('messages').add(msgPayload);
-            input.value = '';
-        }
+            async function leaveRoom() {
+                if (unsubscribeMessages) unsubscribeMessages();
+                if (unsubscribeRoom) unsubscribeRoom();
 
-        function openMessageMenu(e, block) {
-            selectedMessageId = block.dataset.id;
-            const senderId = block.dataset.sender;
-            const text = block.dataset.text;
-            const author = block.dataset.author;
-
-            const isMe = senderId === currentUser.uid;
-            const isAmIAdmin = currentUser.uid === currentRoomAdmin;
-
-            const menu = document.getElementById('message-menu');
-            
-            document.getElementById('menu-edit').style.display = isMe ? 'block' : 'none';
-            document.getElementById('menu-delete').style.display = (isMe || isAmIAdmin) ? 'block' : 'none';
-
-            menu.style.display = 'flex';
-
-            document.getElementById('menu-reply').onclick = () => {
-                replyMessageData = { id: selectedMessageId, text: text, author: author };
-                document.getElementById('reply-user').innerText = author;
-                document.getElementById('reply-text').innerText = text;
-                document.getElementById('reply-preview').style.display = 'flex';
-                menu.style.display = 'none';
-            };
-
-            document.getElementById('menu-edit').onclick = async () => {
-                const newText = prompt("Edite sua mensagem:", text);
-                if (newText && newText.trim() !== "") {
-                    await db.collection('rooms').doc(currentRoomId).collection('messages').doc(selectedMessageId).update({
-                        text: newText.trim() + " (editada)"
-                    });
+                if (currentRoomId && currentUser) {
+                    try {
+                        const roomRef = doc(db, 'rooms', currentRoomId);
+                        let updateData = {};
+                        updateData[`participants.${currentUser.uid}`] = deleteField();
+                        await updateDoc(roomRef, updateData);
+                    } catch (e) {
+                        console.log("Remoção ao sair tratada ou sala já limpa.");
+                    }
                 }
-                menu.style.display = 'none';
-            };
 
-            document.getElementById('menu-delete').onclick = async () => {
-                if (confirm("Deseja apagar essa mensagem para todos?")) {
-                    await db.collection('rooms').doc(currentRoomId).collection('messages').doc(selectedMessageId).delete();
-                }
-                menu.style.display = 'none';
-            };
-        }
-
-        function cancelReply() {
-            replyMessageData = null;
-            document.getElementById('reply-preview').style.display = 'none';
-        }
-        document.getElementById('btn-cancel-reply').addEventListener('click', cancelReply);
-        document.getElementById('menu-cancel').addEventListener('click', () => { document.getElementById('message-menu').style.display = 'none'; });
-
-        const profileModal = document.getElementById('modal-profile');
-        const openProfileTrigger = (imgId) => {
-            document.getElementById(imgId).addEventListener('click', () => {
-                document.getElementById('modal-user-img').src = currentUser.photoURL || 'https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_64dp.png';
-                document.getElementById('modal-user-name').innerText = currentUser.customName;
-                document.getElementById('modal-user-email').innerText = currentUser.email || 'Sem e-mail';
-                profileModal.style.display = 'flex';
-            });
-        };
-        openProfileTrigger('user-avatar-rooms');
-        openProfileTrigger('user-avatar-chat');
-
-        document.getElementById('close-profile').addEventListener('click', () => profileModal.style.display = 'none');
-        document.getElementById('btn-logout').addEventListener('click', () => { 
-            localStorage.removeItem('chat_display_name');
-            sessionStorage.removeItem('pending_display_name');
-            auth.signOut(); 
-            profileModal.style.display = 'none'; 
-        });
-
-        document.getElementById('btn-toggle-theme').addEventListener('click', () => {
-            if (document.body.classList.contains('theme-dark')) {
-                document.body.classList.replace('theme-dark', 'theme-light');
-            } else {
-                document.body.classList.replace('theme-light', 'theme-dark');
+                currentRoomId = null;
+                loadRoomsScreen();
             }
-        });
+            document.getElementById('btn-leave-room').addEventListener('click', leaveRoom);
 
-        const roomModal = document.getElementById('modal-room');
-        document.getElementById('btn-room-details').addEventListener('click', async () => {
-            const roomDoc = await db.collection('rooms').doc(currentRoomId).get();
-            if (!roomDoc.exists) return;
-            const roomData = roomDoc.data();
+            document.getElementById('btn-send').addEventListener('click', sendTextMessage);
+            document.getElementById('chat-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendTextMessage(); });
 
-            document.getElementById('info-room-name').innerText = `Sala: ${roomData.name.toUpperCase()}`;
-            
-            const isAmIAdmin = currentUser.uid === currentRoomAdmin;
-            document.getElementById('adm-controls').style.display = isAmIAdmin ? 'block' : 'none';
+            async function sendTextMessage() {
+                const input = document.getElementById('chat-input');
+                const text = input.value.trim();
+                if (!text || !currentRoomId) return;
 
-            const pList = document.getElementById('participants-list');
-            pList.innerHTML = '';
-            
-            Object.keys(roomData.participants).forEach(uid => {
-                const name = roomData.participants[uid];
-                const row = document.createElement('div');
-                row.className = 'participant-row';
-                row.innerHTML = `
-                    <span>${name} ${uid === roomData.admin ? '<strong>(ADM)</strong>' : ''}</span>
-                    ${(isAmIAdmin && uid !== currentUser.uid) ? `<button class="btn-danger" style="width:auto; padding:4px 8px; margin:0;" onclick="kickUser('${uid}')">Remover</button>` : ''}
-                `;
-                pList.appendChild(row);
+                const msgPayload = {
+                    senderId: currentUser.uid,
+                    senderName: currentUser.customName,
+                    text: text,
+                    timestamp: serverTimestamp()
+                };
+
+                if (replyMessageData) {
+                    msgPayload.replyTo = replyMessageData;
+                    cancelReply();
+                }
+
+                await addDoc(collection(db, 'rooms', currentRoomId, 'messages'), msgPayload);
+                input.value = '';
+            }
+
+            function openMessageMenu(e, block) {
+                selectedMessageId = block.dataset.id;
+                const senderId = block.dataset.sender;
+                const text = block.dataset.text;
+                const author = block.dataset.author;
+
+                const isMe = senderId === currentUser.uid;
+                const isAmIAdmin = currentUser.uid === currentRoomAdmin;
+
+                const menu = document.getElementById('message-menu');
+                
+                document.getElementById('menu-edit').style.style.display = isMe ? 'block' : 'none';
+                document.getElementById('menu-delete').style.style.display = (isMe || isAmIAdmin) ? 'block' : 'none';
+
+                menu.style.display = 'flex';
+
+                document.getElementById('menu-reply').onclick = () => {
+                    replyMessageData = { id: selectedMessageId, text: text, author: author };
+                    document.getElementById('reply-user').innerText = author;
+                    document.getElementById('reply-text').innerText = text;
+                    document.getElementById('reply-preview').style.display = 'flex';
+                    menu.style.display = 'none';
+                };
+
+                document.getElementById('menu-edit').onclick = async () => {
+                    const newText = prompt("Edite sua mensagem:", text);
+                    if (newText && newText.trim() !== "") {
+                        await updateDoc(doc(db, 'rooms', currentRoomId, 'messages', selectedMessageId), {
+                            text: newText.trim() + " (editada)"
+                        });
+                    }
+                    menu.style.display = 'none';
+                };
+
+                document.getElementById('menu-delete').onclick = async () => {
+                    if (confirm("Deseja apagar essa mensagem para todos?")) {
+                        await deleteDoc(doc(db, 'rooms', currentRoomId, 'messages', selectedMessageId));
+                    }
+                    menu.style.display = 'none';
+                };
+            }
+
+            function cancelReply() {
+                replyMessageData = null;
+                document.getElementById('reply-preview').style.display = 'none';
+            }
+            document.getElementById('btn-cancel-reply').addEventListener('click', cancelReply);
+            document.getElementById('menu-cancel').addEventListener('click', () => { document.getElementById('message-menu').style.display = 'none'; });
+
+            const profileModal = document.getElementById('modal-profile');
+            const openProfileTrigger = (imgId) => {
+                document.getElementById(imgId).addEventListener('click', () => {
+                    document.getElementById('modal-user-img').src = currentUser.photoURL || 'https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_64dp.png';
+                    document.getElementById('modal-user-name').innerText = currentUser.customName;
+                    document.getElementById('modal-user-email').innerText = currentUser.email || 'Sem e-mail';
+                    profileModal.style.display = 'flex';
+                });
+            };
+            openProfileTrigger('user-avatar-rooms');
+            openProfileTrigger('user-avatar-chat');
+
+            document.getElementById('close-profile').addEventListener('click', () => profileModal.style.display = 'none');
+            document.getElementById('btn-logout').addEventListener('click', async () => { 
+                localStorage.removeItem('chat_display_name');
+                sessionStorage.removeItem('pending_display_name');
+                await signOut(auth); 
+                profileModal.style.display = 'none'; 
             });
 
-            roomModal.style.display = 'flex';
-        });
+            document.getElementById('btn-toggle-theme').addEventListener('click', () => {
+                if (document.body.classList.contains('theme-dark')) {
+                    document.body.classList.replace('theme-dark', 'theme-light');
+                } else {
+                    document.body.classList.replace('theme-light', 'theme-dark');
+                }
+            });
 
-        document.getElementById('close-room').addEventListener('click', () => roomModal.style.display = 'none');
+            const roomModal = document.getElementById('modal-room');
+            document.getElementById('btn-room-details').addEventListener('click', async () => {
+                const roomDoc = await getDoc(doc(db, 'rooms', currentRoomId));
+                if (!roomDoc.exists()) return;
+                const roomData = roomDoc.data();
 
-        window.kickUser = async function(uidTarget) {
-            if (confirm("Tem certeza que deseja remover este participante?")) {
-                let updateData = {};
-                updateData[`participants.${uidTarget}`] = firebase.firestore.FieldValue.delete();
-                await db.collection('rooms').doc(currentRoomId).update(updateData);
-                alert('Participante removido!');
+                document.getElementById('info-room-name').innerText = `Sala: ${roomData.name.toUpperCase()}`;
+                
+                const isAmIAdmin = currentUser.uid === currentRoomAdmin;
+                document.getElementById('adm-controls').style.display = isAmIAdmin ? 'block' : 'none';
+
+                const pList = document.getElementById('participants-list');
+                pList.innerHTML = '';
+                
+                Object.keys(roomData.participants).forEach(uid => {
+                    const name = roomData.participants[uid];
+                    const row = document.createElement('div');
+                    row.className = 'participant-row';
+                    row.innerHTML = `
+                        <span>${name} ${uid === roomData.admin ? '<strong>(ADM)</strong>' : ''}</span>
+                        ${(isAmIAdmin && uid !== currentUser.uid) ? `<button class="btn-danger" style="width:auto; padding:4px 8px; margin:0;" onclick="kickUser('${uid}')">Remover</button>` : ''}
+                    `;
+                    pList.appendChild(row);
+                });
+
+                roomModal.style.display = 'flex';
+            });
+
+            document.getElementById('close-room').addEventListener('click', () => roomModal.style.display = 'none');
+
+            window.kickUser = async function(uidTarget) {
+                if (confirm("Tem certeza que deseja remover este participante?")) {
+                    let updateData = {};
+                    updateData[`participants.${uidTarget}`] = deleteField();
+                    await updateDoc(doc(db, 'rooms', currentRoomId), updateData);
+                    alert('Participante removido!');
+                    roomModal.style.display = 'none';
+                }
+            };
+
+            document.getElementById('btn-rename-room').addEventListener('click', async () => {
+                const newName = document.getElementById('new-room-name').value.trim().toLowerCase();
+                if (!newName) return alert('Insira um nome válido!');
+                await updateDoc(doc(db, 'rooms', currentRoomId), { name: newName });
+                alert('Nome alterado com sucesso!');
                 roomModal.style.display = 'none';
-            }
-        };
+            });
 
-        document.getElementById('btn-rename-room').addEventListener('click', async () => {
-            const newName = document.getElementById('new-room-name').value.trim().toLowerCase();
-            if (!newName) return alert('Insira um nome válido!');
-            await db.collection('rooms').doc(currentRoomId).update({ name: newName });
-            alert('Nome alterado com sucesso!');
-            roomModal.style.display = 'none';
-        });
-
-        document.getElementById('btn-clear-chat').addEventListener('click', async () => {
-            if (confirm("ATENÇÃO: Deseja apagar permanentemente todas as mensagens desta sala?")) {
-                const messagesSnapshot = await db.collection('rooms').doc(currentRoomId).collection('messages').get();
-                const batch = db.batch();
-                messagesSnapshot.forEach(doc => batch.delete(doc.ref));
-                await batch.commit();
-                alert('Histórico de conversas limpo!');
-                roomModal.style.display = 'none';
-            }
-        });
+            document.getElementById('btn-clear-chat').addEventListener('click', async () => {
+                if (confirm("ATENÇÃO: Deseja apagar permanentemente todas as mensagens desta sala?")) {
+                    const messagesSnapshot = await getDocs(collection(db, 'rooms', currentRoomId, 'messages'));
+                    const batch = writeBatch(db);
+                    messagesSnapshot.forEach(docSnap => batch.delete(docSnap.ref));
+                    await batch.commit();
+                    alert('Histórico de conversas limpo!');
+                    roomModal.style.display = 'none';
+                }
+            });
+        }
     </script>
 </body>
 </html>
