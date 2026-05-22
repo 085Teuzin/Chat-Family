@@ -41,8 +41,8 @@
             </button>
         </div>
 
-        <div id="screenCall" class="hidden w-full max-w-sm flex flex-col items-center justify-center animate-fade-in">
-            <div class="relative mb-6">
+        <div id="screenCall" class="hidden w-full max-w-sm flex flex-col items-center justify-center animate-fade-in relative">
+            <div class="relative mb-4">
                 <div class="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-tr from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-3xl sm:text-4xl font-bold shadow-2xl relative z-10" id="avatarLetter">
                     -
                 </div>
@@ -50,23 +50,24 @@
             </div>
             
             <h2 id="roomUser" class="text-2xl sm:text-3xl font-semibold tracking-wide text-gray-100">...</h2>
-            <p id="callStatus" class="text-gray-400 text-sm mt-2 font-light tracking-wider animate-pulse">Conectando...</p>
+            <p id="callStatus" class="text-gray-400 text-sm mt-1 font-light tracking-wider animate-pulse">Conectando...</p>
 
-            <div id="participantsList" class="mt-8 w-full max-h-40 overflow-y-auto bg-black/20 rounded-xl p-3 flex flex-wrap gap-2 justify-center content-start border border-white/5">
+            <div id="participantsList" class="mt-4 w-full max-h-32 overflow-y-auto bg-black/20 rounded-xl p-3 flex flex-wrap gap-2 justify-center content-start border border-white/5">
             </div>
         </div>
     </main>
 
-    <footer id="controlsBar" class="invisible opacity-0 translate-y-4 transition-all duration-300 w-full max-w-md mx-auto bg-[#1e1e22]/90 backdrop-blur-lg border border-gray-800/60 rounded-3xl p-4 flex justify-between items-center gap-2 mb-2 shadow-2xl z-10">
-        <button id="btnVideo" class="flex-1 max-w-[72px] aspect-square rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 transition flex items-center justify-center text-lg text-gray-300">
-            <i class="fa-solid fa-video-slash"></i>
+    <footer id="controlsBar" class="invisible opacity-0 translate-y-4 transition-all duration-300 w-full max-w-md mx-auto bg-[#1e1e22]/90 backdrop-blur-lg border border-gray-800/60 rounded-3xl p-4 flex justify-between items-center gap-2 mb-16 shadow-2xl z-10">
+        <button id="btnChat" class="flex-1 max-w-[72px] aspect-square rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 transition flex items-center justify-center text-lg text-gray-300 relative">
+            <i class="fa-solid fa-comment"></i>
+            <span id="chatBadge" class="hidden absolute top-2 right-2 w-2.5 h-2.5 bg-indigo-500 rounded-full"></span>
         </button>
         
         <button id="btnMute" class="flex-1 max-w-[72px] aspect-square rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 transition flex items-center justify-center text-lg text-gray-300">
             <i class="fa-solid fa-microphone"></i>
         </button>
         
-        <button id="btnSpeaker" class="flex-1 max-w-[72px] aspect-square rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 transition flex items-center justify-center text-lg text-gray-300">
+        <button id="btnSpeaker" class="flex-1 max-w-[72px] aspect-square rounded-2xl bg-indigo-600 text-white active:scale-95 transition flex items-center justify-center text-lg">
             <i class="fa-solid fa-volume-high"></i>
         </button>
         
@@ -75,9 +76,31 @@
         </button>
     </footer>
 
+    <div id="chatModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-[#1e1e22] w-full sm:max-w-md h-[80vh] sm:h-[600px] rounded-t-3xl sm:rounded-3xl flex flex-col justify-between overflow-hidden border border-gray-800/60 shadow-2xl translate-y-full transition-transform duration-300" id="chatContainer">
+            <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-[#18181c]">
+                <h3 class="font-semibold text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-comments text-indigo-400"></i> Chat da Sala
+                </h3>
+                <button id="btnCloseChat" class="text-gray-400 hover:text-white p-2 text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div id="chatMessages" class="flex-1 p-4 overflow-y-auto flex flex-col gap-3 scrollbar-thin"></div>
+            
+            <form id="chatForm" class="p-4 border-t border-gray-800 bg-[#18181c] flex gap-2">
+                <input type="text" id="chatInput" placeholder="Digite uma mensagem..." autocomplete="off" class="flex-1 bg-[#121214] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition text-sm">
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-4 rounded-xl transition flex items-center justify-center">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, remove, onDisconnect, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDthwqD0CGFwDov-zfO-Hx6TD_y3lHsnoc",
@@ -99,9 +122,15 @@
         let currentUser = null;
         let userId = Math.random().toString(36).substring(2, 9);
         let isMuted = false;
+        let isSpeakerOn = true;
+        let isChatOpen = false;
 
         const rtcConfig = {
-            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            iceServers: [
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:stun1.l.google.com:19302" },
+                { urls: "stun:stun2.l.google.com:19302" }
+            ]
         };
 
         const screenLogin = document.getElementById("screenLogin");
@@ -112,20 +141,35 @@
         const btnJoin = document.getElementById("btnJoin");
         const btnHangup = document.getElementById("btnHangup");
         const btnMute = document.getElementById("btnMute");
+        const btnSpeaker = document.getElementById("btnSpeaker");
         const btnBack = document.getElementById("btnBack");
         const roomUser = document.getElementById("roomUser");
         const callStatus = document.getElementById("callStatus");
         const avatarLetter = document.getElementById("avatarLetter");
         const participantsList = document.getElementById("participantsList");
+        
+        const btnChat = document.getElementById("btnChat");
+        const chatBadge = document.getElementById("chatBadge");
+        const chatModal = document.getElementById("chatModal");
+        const chatContainer = document.getElementById("chatContainer");
+        const btnCloseChat = document.getElementById("btnCloseChat");
+        const chatMessages = document.getElementById("chatMessages");
+        const chatForm = document.getElementById("chatForm");
+        const chatInput = document.getElementById("chatInput");
 
         btnJoin.addEventListener("click", joinRoom);
         btnHangup.addEventListener("click", leaveRoom);
         btnBack.addEventListener("click", leaveRoom);
         btnMute.addEventListener("click", toggleMute);
+        btnSpeaker.addEventListener("click", toggleSpeaker);
+        
+        btnChat.addEventListener("click", openChat);
+        btnCloseChat.addEventListener("click", closeChat);
+        chatForm.addEventListener("submit", sendChatMessage);
 
         async function joinRoom() {
             const name = inputName.value.trim();
-            const room = inputRoom.value.trim();
+            const room = inputRoom.value.trim().toLowerCase();
 
             if (!name || !room) {
                 alert("Preencha seu nome e a sala!");
@@ -138,7 +182,7 @@
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
             } catch (err) {
-                alert("Permissão de áudio negada ou microfone indisponível.");
+                alert("Permissão de áudio negada ou microfone indisponível. Verifique as configurações do navegador.");
                 return;
             }
 
@@ -157,6 +201,7 @@
 
             listenToRoom();
             listenToSignals();
+            listenToChat();
         }
 
         function listenToRoom() {
@@ -190,7 +235,7 @@
             const pc = createPeerConnection(targetId);
             localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             
-            const offer = await pc.createOffer();
+            const offer = await pc.createOffer({ offerToReceiveAudio: true });
             await pc.setLocalDescription(offer);
 
             await set(ref(db, `rooms/${currentRoom}/signals/${targetId}/${userId}`), {
@@ -206,7 +251,7 @@
 
             pc.onicecandidate = (event) => {
                 if (event.candidate) {
-                    set(ref(db, `rooms/${currentRoom}/ice/${targetId}/${userId}/${Date.now()}`), {
+                    push(ref(db, `rooms/${currentRoom}/ice/${targetId}/${userId}`), {
                         candidate: JSON.stringify(event.candidate)
                     });
                 }
@@ -218,9 +263,11 @@
                     audioEl = document.createElement("audio");
                     audioEl.id = `audio_${targetId}`;
                     audioEl.autoplay = true;
+                    audioEl.playsInline = true;
                     document.body.appendChild(audioEl);
                 }
                 audioEl.srcObject = event.streams[0];
+                audioEl.muted = !isSpeakerOn;
             };
 
             return pc;
@@ -240,6 +287,7 @@
                         pc = createPeerConnection(senderId);
                         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
                         await pc.setRemoteDescription(new RTCSessionDescription(signal));
+                        
                         const answer = await pc.createAnswer();
                         await pc.setLocalDescription(answer);
 
@@ -248,12 +296,12 @@
                             sdp: answer.sdp,
                             sender: userId
                         });
-                        remove(ref(db, `rooms/${currentRoom}/signals/${userId}/${senderId}`));
+                        await remove(ref(db, `rooms/${currentRoom}/signals/${userId}/${senderId}`));
 
                     } else if (signal.type === "answer") {
                         if (pc) {
                             await pc.setRemoteDescription(new RTCSessionDescription(signal));
-                            remove(ref(db, `rooms/${currentRoom}/signals/${userId}/${senderId}`));
+                            await remove(ref(db, `rooms/${currentRoom}/signals/${userId}/${senderId}`));
                         }
                     }
                 }
@@ -266,17 +314,79 @@
 
                 for (let senderId in iceData) {
                     const pc = peerConnections[senderId];
-                    if (pc) {
+                    if (pc && pc.remoteDescription) {
                         for (let key in iceData[senderId]) {
                             const candidate = JSON.parse(iceData[senderId][key].candidate);
                             try {
                                 await pc.addIceCandidate(new RTCIceCandidate(candidate));
                             } catch(e){}
                         }
-                        remove(ref(db, `rooms/${currentRoom}/ice/${userId}/${senderId}`));
+                        await remove(ref(db, `rooms/${currentRoom}/ice/${userId}/${senderId}`));
                     }
                 }
             });
+        }
+
+        function listenToChat() {
+            const chatRef = ref(db, `rooms/${currentRoom}/messages`);
+            onChildAdded(chatRef, (snapshot) => {
+                const msg = snapshot.val();
+                if (!msg) return;
+
+                const isMe = msg.senderId === userId;
+                const msgEl = document.createElement("div");
+                msgEl.className = `flex flex-col max-w-[80%] ${isMe ? "self-end items-end" : "self-start items-start"}`;
+                
+                msgEl.innerHTML = `
+                    <span class="text-[10px] text-gray-500 px-1 mb-0.5">${msg.senderName}</span>
+                    <div class="px-3 py-2 rounded-2xl text-sm break-all ${isMe ? "bg-indigo-600 text-white rounded-tr-none" : "bg-[#2a2a30] text-gray-200 rounded-tl-none"}">
+                        ${escapeHTML(msg.text)}
+                    </div>
+                `;
+                
+                chatMessages.appendChild(msgEl);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                if (!isChatOpen && !isMe) {
+                    chatBadge.classList.remove("hidden");
+                }
+            });
+        }
+
+        function sendChatMessage(e) {
+            e.preventDefault();
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            const chatRef = ref(db, `rooms/${currentRoom}/messages`);
+            push(chatRef, {
+                senderId: userId,
+                senderName: currentUser,
+                text: text,
+                timestamp: Date.now()
+            });
+
+            chatInput.value = "";
+        }
+
+        function openChat() {
+            isChatOpen = true;
+            chatBadge.classList.add("hidden");
+            chatModal.classList.remove("hidden");
+            setTimeout(() => {
+                chatModal.classList.remove("opacity-0");
+                chatContainer.classList.remove("translate-y-full");
+            }, 50);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function closeChat() {
+            isChatOpen = false;
+            chatModal.classList.add("opacity-0");
+            chatContainer.classList.add("translate-y-full");
+            setTimeout(() => {
+                chatModal.add("hidden");
+            }, 300);
         }
 
         function toggleMute() {
@@ -293,7 +403,24 @@
             }
         }
 
+        function toggleSpeaker() {
+            isSpeakerOn = !isSpeakerOn;
+            
+            document.querySelectorAll("audio").forEach(audio => {
+                audio.muted = !isSpeakerOn;
+            });
+
+            if (isSpeakerOn) {
+                btnSpeaker.className = "flex-1 max-w-[72px] aspect-square rounded-2xl bg-indigo-600 text-white active:scale-95 transition flex items-center justify-center text-lg";
+                btnSpeaker.innerHTML = `<i class="fa-solid fa-volume-high"></i>`;
+            } else {
+                btnSpeaker.className = "flex-1 max-w-[72px] aspect-square rounded-2xl bg-white/5 hover:bg-white/10 text-gray-400 active:scale-95 transition flex items-center justify-center text-lg";
+                btnSpeaker.innerHTML = `<i class="fa-solid fa-volume-xmark"></i>`;
+            }
+        }
+
         async function leaveRoom() {
+            closeChat();
             if (currentRoom && currentUser) {
                 await remove(ref(db, `rooms/${currentRoom}/users/${userId}`));
                 await remove(ref(db, `rooms/${currentRoom}/signals/${userId}`));
@@ -320,8 +447,16 @@
             screenLogin.classList.remove("hidden");
             btnBack.setAttribute("disabled", "true");
             participantsList.innerHTML = "";
+            chatMessages.innerHTML = "";
             
             if(isMuted) toggleMute();
+            if(!isSpeakerOn) toggleSpeaker();
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
         }
     </script>
 </body>
