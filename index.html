@@ -37,6 +37,15 @@
         }
         .safe-top { padding-top: env(safe-area-inset-top); }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        
+        #floating-pip {
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(0, 168, 132, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 168, 132, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 168, 132, 0); }
+        }
     </style>
 </head>
 <body class="h-full w-full overflow-hidden bg-[#0b141a] antialiased select-none flex flex-col justify-between">
@@ -124,6 +133,12 @@
             </div>
             
             <div class="flex items-center gap-3 text-muted text-base">
+                <button id="header-btn-call" title="Fazer Chamada de Voz" class="hover:text-white p-1 text-[#00a884]">
+                    <i class="fas fa-phone-alt text-sm"></i>
+                </button>
+                <button id="header-btn-share-contact" title="Compartilhar meu Contato" class="hover:text-white p-1 text-blue-400">
+                    <i class="fas fa-user-share text-xs"></i>
+                </button>
                 <button id="header-btn-edit" title="Editar nome" class="hover:text-white p-1">
                     <i class="fas fa-pen text-xs"></i>
                 </button>
@@ -149,6 +164,38 @@
             <div class="flex-1 bg-[#2a3942] rounded-lg p-2 min-h-[42px] flex items-center shadow-inner">
                 <input type="text" id="chat-message-input" placeholder="Digite uma mensagem" class="w-full bg-transparent outline-none px-3 text-sm text-white placeholder:text-[#8696a0]">
             </div>
+        </div>
+    </div>
+
+    <div id="screen-call" class="hide fixed inset-0 bg-[#0f1c24] z-40 flex flex-col items-center justify-between p-8 safe-top safe-bottom">
+        <div class="w-full flex justify-start">
+            <button id="btn-call-minimize" class="text-white bg-[#202c33] w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+
+        <div class="flex flex-col items-center gap-4 flex-1 justify-center">
+            <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-[#00a884] shadow-2xl">
+                <img id="call-screen-avatar" src="" class="w-full h-full object-cover">
+            </div>
+            <h2 id="call-screen-name" class="text-2xl font-bold text-white mt-2">Contato</h2>
+            <span id="call-screen-status" class="text-[#00a884] text-sm font-medium tracking-wide animate-pulse">Conectando...</span>
+        </div>
+
+        <div class="flex items-center gap-6 pb-12">
+            <button id="btn-call-toggle-mic" class="w-14 h-14 bg-[#202c33] text-white rounded-full flex items-center justify-center text-lg shadow-xl active:scale-95 transition-all border border-gray-700">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button id="btn-call-hangup" class="w-14 h-14 bg-red-600 text-white rounded-full flex items-center justify-center text-lg shadow-xl active:scale-95 transition-transform">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="floating-pip" class="hide fixed bottom-24 right-6 w-16 h-16 bg-[#00a884] rounded-full z-40 cursor-pointer shadow-2xl overflow-hidden border-2 border-white flex items-center justify-center">
+        <img id="pip-avatar" src="" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-black/20 flex items-center justify-center">
+            <i class="fas fa-phone text-white text-xs animate-bounce"></i>
         </div>
     </div>
 
@@ -209,6 +256,8 @@
         </div>
     </div>
 
+    <audio id="remote-audio" autoplay></audio>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
@@ -232,15 +281,26 @@
 
         let myAccountData = null;
         let selectedContactUid = null;
+        let selectedContactData = null;
         let currentActiveChatId = null;
         let unsubChatMessages = null;
         let unsubContactsList = null;
+        let unsubCallSignals = null;
+
+        let localStream = null;
+        let peerConnection = null;
+        let isMuted = false;
+        let activeCallData = null;
+
+        const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         const scrLoading = document.getElementById("screen-loading");
         const scrAuth = document.getElementById("screen-auth");
         const scrRegister = document.getElementById("screen-register");
         const scrMainList = document.getElementById("screen-main-list");
         const scrPrivateChat = document.getElementById("screen-private-chat");
+        const scrCall = document.getElementById("screen-call");
+        const floatingPip = document.getElementById("floating-pip");
 
         const btnGoogleLogin = document.getElementById("btn-google-login");
         const inputRegName = document.getElementById("reg-name");
@@ -261,10 +321,21 @@
         const chatMessagesContainer = document.getElementById("chat-messages-container");
         const inputChatMessage = document.getElementById("chat-message-input");
 
+        const headerBtnCall = document.getElementById("header-btn-call");
+        const headerBtnShareContact = document.getElementById("header-btn-share-contact");
         const headerBtnEdit = document.getElementById("header-btn-edit");
         const headerBtnClear = document.getElementById("header-btn-clear");
         const headerBtnDelete = document.getElementById("header-btn-delete");
         const headerBtnBack = document.getElementById("header-btn-back");
+
+        const callScreenAvatar = document.getElementById("call-screen-avatar");
+        const callScreenName = document.getElementById("call-screen-name");
+        const callScreenStatus = document.getElementById("call-screen-status");
+        const btnCallMinimize = document.getElementById("btn-call-minimize");
+        const btnCallToggleMic = document.getElementById("btn-call-toggle-mic");
+        const btnCallHangup = document.getElementById("btn-call-hangup");
+        const pipAvatar = document.getElementById("pip-avatar");
+        const remoteAudio = document.getElementById("remote-audio");
 
         const modalAddContact = document.getElementById("modal-add-contact");
         const inputAddContactName = document.getElementById("add-contact-name");
@@ -285,13 +356,8 @@
         const btnCancelEditContact = document.getElementById("btn-cancel-edit-contact");
         const btnSaveEditContact = document.getElementById("btn-save-edit-contact");
 
-        function showLoading() {
-            scrLoading.classList.remove("hide");
-        }
-
-        function hideLoading() {
-            scrLoading.classList.add("hide");
-        }
+        function showLoading() { scrLoading.classList.remove("hide"); }
+        function hideLoading() { scrLoading.classList.add("hide"); }
 
         onAuthStateChanged(auth, async (user) => {
             showLoading();
@@ -301,6 +367,7 @@
                     myAccountData = snapshot.val();
                     showScreen("main-list");
                     bindContactsRealtime();
+                    listenIncomingCalls();
                 } else {
                     showScreen("register");
                 }
@@ -323,11 +390,9 @@
         btnCompleteRegister.addEventListener("click", async () => {
             const name = inputRegName.value.trim();
             const num = inputRegNumber.value.trim();
-
             if (!name || num.length !== 4 || isNaN(num)) {
                 return alert("Insira um nome válido e um número de 4 dígitos!");
             }
-
             showLoading();
             const user = auth.currentUser;
             myAccountData = {
@@ -336,12 +401,11 @@
                 number: num,
                 avatar: user.photoURL || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&h=150&fit=crop"
             };
-
             await set(ref(db, `clone_zap/users/${user.uid}`), myAccountData);
             await set(ref(db, `clone_zap/directory/${num}`), user.uid);
-            
             showScreen("main-list");
             bindContactsRealtime();
+            listenIncomingCalls();
             hideLoading();
         });
 
@@ -350,7 +414,7 @@
             scrRegister.classList.add("hide");
             scrMainList.classList.add("hide");
             scrPrivateChat.classList.add("hide");
-
+            scrCall.classList.add("hide");
             if (screen === "auth") scrAuth.classList.remove("hide");
             if (screen === "register") scrRegister.classList.remove("hide");
             if (screen === "main-list") {
@@ -358,21 +422,20 @@
                 imgMainMyAvatar.src = myAccountData.avatar;
             }
             if (screen === "private-chat") scrPrivateChat.classList.remove("hide");
+            if (screen === "call") scrCall.classList.remove("hide");
         }
 
         btnMainMenu.addEventListener("click", (e) => {
             e.stopPropagation();
             dropdownMain.classList.toggle("hide");
         });
-
-        document.addEventListener("click", () => {
-            dropdownMain.classList.add("hide");
-        });
+        document.addEventListener("click", () => { dropdownMain.classList.add("hide"); });
 
         menuLogout.addEventListener("click", () => {
             showLoading();
             if(unsubContactsList) unsubContactsList();
             if(unsubChatMessages) unsubChatMessages();
+            if(unsubCallSignals) unsubCallSignals();
             signOut(auth);
         });
 
@@ -382,32 +445,26 @@
             inputEditProfileNumber.value = myAccountData.number;
             modalEditProfile.classList.remove("hide");
         });
-
         btnCancelEditProfile.addEventListener("click", () => modalEditProfile.classList.add("hide"));
 
         uploadProfileAvatar.addEventListener("change", (e) => {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onloadend = () => {
-                imgEditProfileAvatar.src = reader.result;
-            };
+            reader.onloadend = () => { imgEditProfileAvatar.src = reader.result; };
             reader.readAsDataURL(file);
         });
 
         btnSaveEditProfile.addEventListener("click", async () => {
             const newName = inputEditProfileName.value.trim();
             if (!newName) return alert("O nome não pode ser vazio!");
-
             showLoading();
             myAccountData.name = newName;
             myAccountData.avatar = imgEditProfileAvatar.src;
-
             await update(ref(db, `clone_zap/users/${myAccountData.uid}`), {
                 name: newName,
                 avatar: myAccountData.avatar
             });
-
             imgMainMyAvatar.src = myAccountData.avatar;
             modalEditProfile.classList.add("hide");
             hideLoading();
@@ -418,57 +475,46 @@
             inputAddContactNumber.value = "";
             modalAddContact.classList.remove("hide");
         });
-
         btnCancelAddContact.addEventListener("click", () => modalAddContact.classList.add("hide"));
 
         btnSaveAddContact.addEventListener("click", async () => {
             const contactName = inputAddContactName.value.trim();
             const contactNum = inputAddContactNumber.value.trim();
-
             if (!contactName || contactNum.length !== 4) {
                 return alert("Preencha o nome e o número de 4 dígitos corretamente!");
             }
-
             if (contactNum === myAccountData.number) {
                 return alert("Você não pode adicionar seu próprio número!");
             }
-
             showLoading();
             const dirSnap = await get(ref(db, `clone_zap/directory/${contactNum}`));
             if (!dirSnap.exists()) {
                 hideLoading();
                 return alert("Nenhum usuário encontrado com esse número no Clone Zap!");
             }
-
             const targetUid = dirSnap.val();
-
             await set(ref(db, `clone_zap/contacts/${myAccountData.uid}/${targetUid}`), {
                 uid: targetUid,
                 savedName: contactName,
                 number: contactNum
             });
-
             modalAddContact.classList.add("hide");
             hideLoading();
         });
 
         function bindContactsRealtime() {
             if (unsubContactsList) unsubContactsList();
-
             unsubContactsList = onValue(ref(db, `clone_zap/contacts/${myAccountData.uid}`), async (snapshot) => {
                 contactsStackList.innerHTML = "";
                 if (!snapshot.exists()) return;
-
                 const contacts = snapshot.val();
                 for (const targetUid of Object.keys(contacts)) {
                     const cInfo = contacts[targetUid];
-
                     const profileSnap = await get(ref(db, `clone_zap/users/${targetUid}`));
                     let dynamicAvatar = "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&h=150&fit=crop";
                     if (profileSnap.exists()) {
                         dynamicAvatar = profileSnap.val().avatar;
                     }
-
                     const chatID = myAccountData.uid < targetUid ? `${myAccountData.uid}_${targetUid}` : `${targetUid}_${myAccountData.uid}`;
                     const lastMsgSnap = await get(ref(db, `clone_zap/chats/${chatID}`));
                     let textPreview = "Nenhuma mensagem trocada";
@@ -478,7 +524,6 @@
                             textPreview = msgs[msgs.length - 1].text;
                         }
                     }
-
                     const block = document.createElement("div");
                     block.className = "flex items-center gap-3 p-3 cursor-pointer hover:bg-[#202c33] transition-all";
                     block.innerHTML = `
@@ -491,7 +536,6 @@
                             <p class="text-xs text-muted truncate mt-0.5">${textPreview}</p>
                         </div>
                     `;
-
                     block.addEventListener("click", () => {
                         showLoading();
                         openChatWith(targetUid, cInfo.savedName, cInfo.number, dynamicAvatar);
@@ -503,12 +547,11 @@
 
         function openChatWith(targetUid, savedName, number, avatar) {
             selectedContactUid = targetUid;
+            selectedContactData = { uid: targetUid, savedName: savedName, number: number, avatar: avatar };
             currentActiveChatId = myAccountData.uid < targetUid ? `${myAccountData.uid}_${targetUid}` : `${targetUid}_${myAccountData.uid}`;
-
             imgChatTargetAvatar.src = avatar;
             txtChatTargetName.innerText = savedName;
             txtChatTargetNumber.innerText = `#${number}`;
-
             showScreen("private-chat");
             listenChatMessages();
         }
@@ -523,7 +566,6 @@
 
         function listenChatMessages() {
             if (unsubChatMessages) unsubChatMessages();
-
             unsubChatMessages = onValue(ref(db, `clone_zap/chats/${currentActiveChatId}`), (snapshot) => {
                 chatMessagesContainer.innerHTML = "";
                 if (snapshot.exists()) {
@@ -531,13 +573,36 @@
                     Object.values(messages).forEach(m => {
                         const isMe = m.senderId === myAccountData.uid;
                         const container = document.createElement("div");
-                        container.className = `max-w-[75%] rounded-lg p-2 px-3 text-xs relative shadow-sm break-words ${isMe ? "wa-outgoing self-end rounded-tr-none" : "wa-incoming self-start rounded-tl-none"}`;
                         
-                        container.innerHTML = `
-                            <p class="text-white text-[13px] leading-relaxed pr-8">${m.text}</p>
-                            <span class="absolute bottom-1 right-1.5 text-[9px] text-muted font-medium">${m.time}</span>
-                        `;
-                        chatMessagesContainer.appendChild(container);
+                        if (m.isContactShare) {
+                            container.className = `max-w-[75%] rounded-lg p-3 text-xs relative shadow-sm break-words ${isMe ? "wa-outgoing self-end rounded-tr-none" : "wa-incoming self-start rounded-tl-none"} border border-[#222e35]`;
+                            container.innerHTML = `
+                                <div class="flex items-center gap-3 bg-[#111b21] p-2.5 rounded-lg mb-1 border wa-border cursor-pointer active:scale-95 transition-transform" id="msg-card-${m.time.replace(':','')}">
+                                    <div class="w-9 h-9 rounded-full bg-[#00a884] flex items-center justify-center text-white text-sm"><i class="fas fa-user"></i></div>
+                                    <div class="overflow-hidden flex flex-col">
+                                        <span class="font-bold text-white text-xs truncate">${m.contactName}</span>
+                                        <span class="text-[10px] text-muted font-mono">#${m.contactNumber}</span>
+                                    </div>
+                                </div>
+                                <p class="text-[#00a884] font-bold text-[11px] uppercase tracking-wider mt-1 text-center">Adicionar Contato</p>
+                                <span class="absolute bottom-1 right-1.5 text-[9px] text-muted font-medium">${m.time}</span>
+                            `;
+                            chatMessagesContainer.appendChild(container);
+                            
+                            document.getElementById(`msg-card-${m.time.replace(':','')}`).addEventListener("click", () => {
+                                if (m.senderId === myAccountData.uid) return;
+                                inputAddContactName.value = m.contactName;
+                                inputAddContactNumber.value = m.contactNumber;
+                                modalAddContact.classList.remove("hide");
+                            });
+                        } else {
+                            container.className = `max-w-[75%] rounded-lg p-2 px-3 text-xs relative shadow-sm break-words ${isMe ? "wa-outgoing self-end rounded-tr-none" : "wa-incoming self-start rounded-tl-none"}`;
+                            container.innerHTML = `
+                                <p class="text-white text-[13px] leading-relaxed pr-8">${m.text}</p>
+                                <span class="absolute bottom-1 right-1.5 text-[9px] text-muted font-medium">${m.time}</span>
+                            `;
+                            chatMessagesContainer.appendChild(container);
+                        }
                     });
                     chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
                 }
@@ -545,41 +610,49 @@
             });
         }
 
+        async function sendPushMessage(payload) {
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const msgRef = push(ref(db, `clone_zap/chats/${currentActiveChatId}`));
+            await set(msgRef, {
+                senderId: myAccountData.uid,
+                time: timeStr,
+                ...payload
+            });
+        }
+
         inputChatMessage.addEventListener("keydown", async (e) => {
             if (e.key === "Enter") {
                 const text = inputChatMessage.value.trim();
                 if (!text) return;
-
-                const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const msgRef = push(ref(db, `clone_zap/chats/${currentActiveChatId}`));
-                
-                await set(msgRef, {
-                    senderId: myAccountData.uid,
-                    text: text,
-                    time: timeStr
-                });
-
                 inputChatMessage.value = "";
+                await sendPushMessage({ text: text });
             }
+        });
+
+        headerBtnShareContact.addEventListener("click", async () => {
+            await sendPushMessage({
+                isContactShare: true,
+                contactName: myAccountData.name,
+                contactNumber: myAccountData.number,
+                text: `Contato de ${myAccountData.name} #${myAccountData.number}`
+            });
         });
 
         headerBtnEdit.addEventListener("click", () => {
             inputEditContactName.value = txtChatTargetName.innerText;
             modalEditContact.classList.remove("hide");
         });
-
         btnCancelEditContact.addEventListener("click", () => modalEditContact.classList.add("hide"));
 
         btnSaveEditContact.addEventListener("click", async () => {
             const updatedName = inputEditContactName.value.trim();
             if (!updatedName) return alert("O nome não pode ser vazio!");
-
             showLoading();
             await update(ref(db, `clone_zap/contacts/${myAccountData.uid}/${selectedContactUid}`), {
                 savedName: updatedName
             });
-
             txtChatTargetName.innerText = updatedName;
+            if(selectedContactData) selectedContactData.savedName = updatedName;
             modalEditContact.classList.add("hide");
             hideLoading();
         });
@@ -601,6 +674,188 @@
                 bindContactsRealtime();
                 hideLoading();
             }
+        });
+
+        async function setupMediaStream() {
+            if (!localStream) {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            }
+        }
+
+        function initPeerConnection(targetUid) {
+            peerConnection = new RTCPeerConnection(rtcConfig);
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            peerConnection.ontrack = (event) => {
+                if (event.streams && event.streams[0]) {
+                    remoteAudio.srcObject = event.streams[0];
+                    callScreenStatus.innerText = "Em chamada";
+                }
+            };
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    push(ref(db, `clone_zap/calls/${targetUid}/candidates`), {
+                        candidate: event.candidate.toJSON(),
+                        sender: myAccountData.uid
+                    });
+                }
+            };
+        }
+
+        headerBtnCall.addEventListener("click", async () => {
+            showLoading();
+            try {
+                await setupMediaStream();
+                activeCallData = {
+                    roomID: currentActiveChatId,
+                    targetUid: selectedContactUid,
+                    name: selectedContactData.savedName,
+                    avatar: selectedContactData.avatar
+                };
+                
+                callScreenAvatar.src = activeCallData.avatar;
+                pipAvatar.src = activeCallData.avatar;
+                callScreenName.innerText = activeCallData.name;
+                callScreenStatus.innerText = "Chamando...";
+                
+                showScreen("call");
+                hideLoading();
+
+                initPeerConnection(selectedContactUid);
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                await set(ref(db, `clone_zap/calls/${selectedContactUid}/setup`), {
+                    offer: { type: offer.type, sdp: offer.sdp },
+                    callerId: myAccountData.uid,
+                    callerName: myAccountData.name,
+                    callerAvatar: myAccountData.avatar,
+                    callerNumber: myAccountData.number,
+                    roomID: currentActiveChatId
+                });
+            } catch (err) {
+                hideLoading();
+                alert("Erro ao acessar microfone: " + err.message);
+            }
+        });
+
+        function listenIncomingCalls() {
+            if (unsubCallSignals) unsubCallSignals();
+            unsubCallSignals = onValue(ref(db, `clone_zap/calls/${myAccountData.uid}/setup`), async (snapshot) => {
+                if (!snapshot.exists()) {
+                    if (activeCallData) endCallSession(false);
+                    return;
+                }
+                const session = snapshot.val();
+                if (activeCallData) return;
+
+                activeCallData = {
+                    roomID: session.roomID,
+                    targetUid: session.callerId,
+                    name: session.callerName,
+                    avatar: session.callerAvatar
+                };
+
+                callScreenAvatar.src = activeCallData.avatar;
+                pipAvatar.src = activeCallData.avatar;
+                callScreenName.innerText = activeCallData.name;
+                callScreenStatus.innerText = "Conectando...";
+                showScreen("call");
+
+                await setupMediaStream();
+                initPeerConnection(session.callerId);
+
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(session.offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+
+                await set(ref(db, `clone_zap/calls/${session.callerId}/answer`), {
+                    type: answer.type,
+                    sdp: answer.sdp
+                });
+
+                onValue(ref(db, `clone_zap/calls/${myAccountData.uid}/candidates`), (candSnap) => {
+                    if (candSnap.exists()) {
+                        Object.values(candSnap.val()).forEach(async (c) => {
+                            if (c.sender !== myAccountData.uid) {
+                                try { await peerConnection.addIceCandidate(new RTCIceCandidate(c.candidate)); } catch(e){}
+                            }
+                        });
+                    }
+                });
+            });
+
+            onValue(ref(db, `clone_zap/calls/${myAccountData.uid}/answer`), async (snapshot) => {
+                if (snapshot.exists() && peerConnection) {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(snapshot.val()));
+                    onValue(ref(db, `clone_zap/calls/${activeCallData.targetUid}/candidates`), (candSnap) => {
+                        if (candSnap.exists()) {
+                            Object.values(candSnap.val()).forEach(async (c) => {
+                                if (c.sender !== myAccountData.uid) {
+                                    try { await peerConnection.addIceCandidate(new RTCIceCandidate(c.candidate)); } catch(e){}
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        function endCallSession(notifyRemote = true) {
+            if (notifyRemote && activeCallData) {
+                remove(ref(db, `clone_zap/calls/${activeCallData.targetUid}`));
+                remove(ref(db, `clone_zap/calls/${myAccountData.uid}`));
+            }
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            remoteAudio.srcObject = null;
+            activeCallData = null;
+            isMuted = false;
+            btnCallToggleMic.className = "w-14 h-14 bg-[#202c33] text-white rounded-full flex items-center justify-center text-lg shadow-xl active:scale-95 transition-all border border-gray-700";
+            btnCallToggleMic.innerHTML = `<i class="fas fa-microphone"></i>`;
+            
+            scrCall.classList.add("hide");
+            floatingPip.classList.add("hide");
+            if (selectedContactUid) {
+                showScreen("private-chat");
+            } else {
+                showScreen("main-list");
+            }
+        }
+
+        btnCallHangup.addEventListener("click", () => endCallSession(true));
+
+        btnCallToggleMic.addEventListener("click", () => {
+            if (!localStream) return;
+            isMuted = !isMuted;
+            localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+            if (isMuted) {
+                btnCallToggleMic.className = "w-14 h-14 bg-red-600/80 text-white rounded-full flex items-center justify-center text-lg shadow-xl active:scale-95 transition-all";
+                btnCallToggleMic.innerHTML = `<i class="fas fa-microphone-slash"></i>`;
+            } else {
+                btnCallToggleMic.className = "w-14 h-14 bg-[#202c33] text-white rounded-full flex items-center justify-center text-lg shadow-xl active:scale-95 transition-all border border-gray-700";
+                btnCallToggleMic.innerHTML = `<i class="fas fa-microphone"></i>`;
+            }
+        });
+
+        btnCallMinimize.addEventListener("click", () => {
+            scrCall.classList.add("hide");
+            floatingPip.classList.remove("hide");
+            if (selectedContactUid) {
+                showScreen("private-chat");
+            } else {
+                showScreen("main-list");
+            }
+        });
+
+        floatingPip.addEventListener("click", () => {
+            floatingPip.classList.add("hide");
+            showScreen("call");
         });
     </script>
 </body>
