@@ -3,480 +3,326 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Call Love - Made By: @085_Teuzinnn</title>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <title>Call Line</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Fredoka', sans-serif;
-        }
-        body {
-            background-color: #1a1216;
-            color: #ffe3ec;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            background: #2d1b24;
-            width: 100%;
-            max-width: 400px;
-            border-radius: 30px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(255, 75, 145, 0.2);
-            border: 2px solid #ff4b91;
-            text-align: center;
-        }
-        h1 {
-            color: #ff4b91;
-            font-size: 2.2rem;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px rgba(255, 75, 145, 0.4);
-        }
-        p.subtitle {
-            color: #ffb7ce;
-            font-size: 0.9rem;
-            margin-bottom: 30px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #ffb7ce;
-            font-size: 0.9rem;
-            padding-left: 5px;
-        }
-        input {
-            width: 100%;
-            padding: 15px;
-            border-radius: 15px;
-            border: 2px solid #4a2839;
-            background: #20121a;
-            color: #fff;
-            font-size: 1rem;
-            outline: none;
-            transition: 0.3s;
-        }
-        input:focus {
-            border-color: #ff4b91;
-            box-shadow: 0 0 10px rgba(255, 75, 145, 0.2);
-        }
-        button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 15px;
-            background: linear-gradient(45deg, #ff4b91, #ff76ce);
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-            box-shadow: 0 5px 15px rgba(255, 75, 145, 0.3);
-        }
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(255, 75, 145, 0.5);
-        }
-        .hidden {
-            display: none !important;
-        }
-        .call-screen {
-            display: flex;
-            flex-direction: column;
-            height: 550px;
-        }
-        .room-info {
-            background: #20121a;
-            padding: 15px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #4a2839;
-        }
-        .room-info h3 {
-            color: #ff4b91;
-            font-size: 1.2rem;
-        }
-        .participants {
-            font-size: 0.85rem;
-            color: #ffb7ce;
-            margin-top: 5px;
-        }
-        .chat-area {
-            flex: 1;
-            background: #20121a;
-            border-radius: 20px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            border: 1px solid #4a2839;
-        }
-        .messages {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 10px;
-            padding-right: 5px;
-        }
-        .messages::-webkit-scrollbar {
-            width: 5px;
-        }
-        .messages::-webkit-scrollbar-thumb {
-            background: #4a2839;
-            border-radius: 10px;
-        }
-        .msg {
-            max-width: 80%;
-            padding: 10px 14px;
-            border-radius: 18px;
-            font-size: 0.9rem;
-            line-height: 1.4;
-            text-align: left;
-            word-break: break-word;
-        }
-        .msg.sent {
-            background: #ff4b91;
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
-        }
-        .msg.received {
-            background: #4a2839;
-            color: #ffe3ec;
-            align-self: flex-start;
-            border-bottom-left-radius: 4px;
-        }
-        .msg .sender {
-            font-size: 0.75rem;
-            opacity: 0.8;
-            display: block;
-            margin-bottom: 2px;
-            font-weight: 600;
-        }
-        .chat-input-group {
-            display: flex;
-            gap: 8px;
-        }
-        .chat-input-group input {
-            padding: 10px 15px;
-            border-radius: 12px;
-        }
-        .chat-input-group button {
-            width: auto;
-            padding: 10px 20px;
-            border-radius: 12px;
-        }
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .btn-round {
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: 0.3s;
-            color: white;
-        }
-        .btn-mute {
-            background: #4a2839;
-            border: 2px solid #ff76ce;
-        }
-        .btn-mute.muted {
-            background: #ff76ce;
-        }
-        .btn-hangup {
-            background: #ff3333;
-            box-shadow: 0 5px 15px rgba(255, 51, 51, 0.3);
-        }
-        .btn-hangup:hover {
-            background: #ff0000;
-            box-shadow: 0 8px 20px rgba(255, 51, 51, 0.5);
-        }
-        .btn-round svg {
-            width: 24px;
-            height: 24px;
-            fill: currentColor;
+        .bg-pixelated {
+            background: linear-gradient(45deg, #1e1e24 25%, #2a2a35 25%, #2a2a35 50%, #1e1e24 50%, #1e1e24 75%, #2a2a35 75%, #2a2a35 100%);
+            background-size: 40px 40px;
+            filter: blur(2px);
+            opacity: 0.15;
         }
     </style>
 </head>
-<body>
+<body class="bg-[#121214] text-white font-sans h-screen overflow-hidden flex flex-col justify-between p-4 sm:p-6 select-none relative">
 
-<div class="container">
-    <div id="login-screen">
-        <h1>Call Love 💖</h1>
-        <p class="subtitle">Conecte-se ao seu amor com privacidade</p>
-        
-        <div class="form-group">
-            <label>Seu Nome</label>
-            <input type="text" id="username" placeholder="Ex: Amorzinho">
-        </div>
-        <div class="form-group">
-            <label>Nome da Sala</label>
-            <input type="text" id="room-name" placeholder="Ex: NossoCantinho">
-        </div>
-        <div class="form-group">
-            <label>Senha da Sala</label>
-            <input type="password" id="room-pass" placeholder="••••••••">
-        </div>
-        
-        <button id="btn-connect">Entrar na Chamada</button>
-    </div>
+    <div class="absolute inset-0 bg-pixelated -z-10"></div>
 
-    <div id="call-screen" class="call-screen hidden">
-        <div class="room-info">
-            <h3 id="display-room">Sala: -</h3>
-            <div class="participants" id="participant-list">Na call: Carregando...</div>
+    <header class="flex justify-between items-center w-full max-w-md mx-auto z-10">
+        <button id="btnBack" class="text-gray-400 hover:text-white transition p-2 text-xl" disabled>
+            <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="flex items-center gap-1 text-xs text-gray-500 font-medium">
+            <i class="fa-solid fa-lock text-[10px]"></i> End-to-End Encrypted
+        </div>
+        <button class="text-gray-400 hover:text-white transition p-2 text-xl">
+            <i class="fa-solid fa-ellipsis"></i>
+        </button>
+    </header>
+
+    <main class="flex-1 flex flex-col items-center justify-center text-center z-10 px-4">
+        <div id="screenLogin" class="w-full max-w-xs flex flex-col gap-4">
+            <h1 class="text-2xl font-bold tracking-wider mb-2 bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">CALL LINE</h1>
+            <input type="text" id="inputName" placeholder="Seu nome" class="w-full bg-[#1e1e22] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition text-center">
+            <input type="text" id="inputRoom" placeholder="ID da Sala" class="w-full bg-[#1e1e22] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition text-center">
+            <button id="btnJoin" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-medium py-3 rounded-xl transition shadow-lg shadow-indigo-600/20 mt-2">
+                Entrar na Sala
+            </button>
         </div>
 
-        <div class="chat-area">
-            <div class="messages" id="messages-container"></div>
-            <div class="chat-input-group">
-                <input type="text" id="chat-input" placeholder="Envie um mimo em texto...">
-                <button id="btn-send">💝</button>
+        <div id="screenCall" class="hidden w-full max-w-sm flex flex-col items-center justify-center animate-fade-in">
+            <div class="relative mb-6">
+                <div class="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-tr from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-3xl sm:text-4xl font-bold shadow-2xl relative z-10" id="avatarLetter">
+                    -
+                </div>
+                <div class="absolute inset-0 bg-indigo-500 rounded-full blur-xl opacity-40 animate-pulse"></div>
+            </div>
+            
+            <h2 id="roomUser" class="text-2xl sm:text-3xl font-semibold tracking-wide text-gray-100">...</h2>
+            <p id="callStatus" class="text-gray-400 text-sm mt-2 font-light tracking-wider animate-pulse">Conectando...</p>
+
+            <div id="participantsList" class="mt-8 w-full max-h-40 overflow-y-auto bg-black/20 rounded-xl p-3 flex flex-wrap gap-2 justify-center content-start border border-white/5">
             </div>
         </div>
+    </main>
 
-        <div class="controls">
-            <button class="btn-round btn-mute" id="btn-mute" title="Mutar/Desmutar">
-                <svg viewBox="0 0 24 24" id="icon-mic">
-                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
-                </svg>
-            </button>
-            <button class="btn-round btn-hangup" id="btn-hangup" title="Desligar">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                </svg>
-            </button>
-        </div>
-    </div>
-</div>
-
-<audio id="remote-audio" autoplay></audio>
-
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyDthwqD0CGFwDov-zfO-Hx6TD_y3lHsnoc",
-        authDomain: "teuzin-apps.firebaseapp.com",
-        databaseURL: "https://teuzin-apps-default-rtdb.firebaseio.com",
-        projectId: "teuzin-apps",
-        storageBucket: "teuzin-apps.firebasestorage.app",
-        messagingSenderId: "695505471506",
-        appId: "1:695505471506:web:efe322e605af4a30bfb0cb"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    const loginScreen = document.getElementById('login-screen');
-    const callScreen = document.getElementById('call-screen');
-    const usernameInput = document.getElementById('username');
-    const roomNameInput = document.getElementById('room-name');
-    const roomPassInput = document.getElementById('room-pass');
-    const btnConnect = document.getElementById('btn-connect');
-    const displayRoom = document.getElementById('display-room');
-    const participantList = document.getElementById('participant-list');
-    const messagesContainer = document.getElementById('messages-container');
-    const chatInput = document.getElementById('chat-input');
-    const btnSend = document.getElementById('btn-send');
-    const btnMute = document.getElementById('btn-mute');
-    const btnHangup = document.getElementById('btn-hangup');
-    const remoteAudio = document.getElementById('remote-audio');
-
-    let localStream;
-    let peerConnection;
-    let roomRef;
-    let userRef;
-    let myId;
-    let myName;
-    let isMuted = false;
-
-    const rtcConfig = {
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    };
-
-    if(localStorage.getItem('lc_username')) usernameInput.value = localStorage.getItem('lc_username');
-    if(localStorage.getItem('lc_room')) roomNameInput.value = localStorage.getItem('lc_room');
-    if(localStorage.getItem('lc_pass')) roomPassInput.value = localStorage.getItem('lc_pass');
-
-    btnConnect.addEventListener('click', async () => {
-        myName = usernameInput.value.trim();
-        const roomName = roomNameInput.value.trim().toLowerCase();
-        const roomPass = roomPassInput.value.trim();
-
-        if(!myName || !roomName || !roomPass) {
-            alert('Por favor, preencha todos os campos!');
-            return;
-        }
-
-        localStorage.setItem('lc_username', myName);
-        localStorage.setItem('lc_room', roomName);
-        localStorage.setItem('lc_pass', roomPass);
-
-        try {
-            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        } catch (e) {
-            alert('Precisamos da permissão do microfone para iniciar a chamada de voz!');
-            return;
-        }
-
-        myId = Math.random().toString(36).substring(2, 9);
-        roomRef = db.ref(`rooms/${roomName}`);
-
-        const snapshot = await roomRef.child('password').get();
-        if(snapshot.exists() && snapshot.val() !== roomPass) {
-            alert('Senha incorreta para esta sala!');
-            localStream.getTracks().forEach(t => t.stop());
-            return;
-        }
-
-        if(!snapshot.exists()) {
-            await roomRef.child('password').set(roomPass);
-        }
-
-        loginScreen.classList.add('hidden');
-        callScreen.classList.remove('hidden');
-        displayRoom.innerText = `Sala: ${roomNameInput.value}`;
-
-        userRef = roomRef.child('users').child(myId);
-        await userRef.set({ name: myName });
-        userRef.onDisconnect().remove();
-
-        setupRoomLogic();
-    });
-
-    function setupRoomLogic() {
-        roomRef.child('users').on('value', snapshot => {
-            const users = snapshot.val() || {};
-            const names = Object.values(users).map(u => u.name);
-            participantList.innerText = `Na call: ${names.join(' ❤️ ')}`;
-
-            const userIds = Object.keys(users);
-            if(userIds.length === 2 && !peerConnection) {
-                const otherId = userIds.find(id => id !== myId);
-                if(myId < otherId) {
-                    initiateCall(otherId);
-                }
-            }
-        });
-
-        roomRef.child('messages').on('child_added', snapshot => {
-            const data = snapshot.val();
-            const msgEl = document.createElement('div');
-            msgEl.classList.add('msg', data.senderId === myId ? 'sent' : 'received');
-            msgEl.innerHTML = `<span class="sender">${data.senderName}</span>${data.text}`;
-            messagesContainer.appendChild(msgEl);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        });
-
-        roomRef.child(`signals/${myId}`).on('child_added', async snapshot => {
-            const data = snapshot.val();
-            if(!peerConnection) setupPeerConnection();
-
-            if(data.sdp) {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
-                if(data.sdp.type === 'offer') {
-                    const answer = await peerConnection.createAnswer();
-                    await peerConnection.setLocalDescription(answer);
-                    const otherId = data.from;
-                    roomRef.child(`signals/${otherId}`).push({ sdp: answer, from: myId });
-                }
-            } else if(data.candidate) {
-                try {
-                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-                } catch(e){}
-            }
-        });
-    }
-
-    function setupPeerConnection() {
-        peerConnection = new RTCPeerConnection(rtcConfig);
+    <footer id="controlsBar" class="invisible opacity-0 translate-y-4 transition-all duration-300 w-full max-w-md mx-auto bg-[#1e1e22]/90 backdrop-blur-lg border border-gray-800/60 rounded-3xl p-4 flex justify-between items-center gap-2 mb-2 shadow-2xl z-10">
+        <button id="btnVideo" class="flex-1 max-w-[72px] aspect-square rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 transition flex items-center justify-center text-lg text-gray-300">
+            <i class="fa-solid fa-video-slash"></i>
+        </button>
         
-        localStream.getTracks().forEach(track => {
-            peerConnection.addTrack(track, localStream);
-        });
+        <button id="btnMute" class="flex-1 max-w-[72px] aspect-square rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 transition flex items-center justify-center text-lg text-gray-300">
+            <i class="fa-solid fa-microphone"></i>
+        </button>
+        
+        <button id="btnSpeaker" class="flex-1 max-w-[72px] aspect-square rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 transition flex items-center justify-center text-lg text-gray-300">
+            <i class="fa-solid fa-volume-high"></i>
+        </button>
+        
+        <button id="btnHangup" class="flex-1 max-w-[72px] aspect-square rounded-2xl bg-red-500 hover:bg-red-600 active:scale-95 transition flex items-center justify-center text-xl text-white shadow-lg shadow-red-500/20">
+            <i class="fa-solid fa-phone-slash rotate-[-135deg]"></i>
+        </button>
+    </footer>
 
-        peerConnection.ontrack = event => {
-            if(event.streams && event.streams[0]) {
-                remoteAudio.srcObject = event.streams[0];
-            }
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDthwqD0CGFwDov-zfO-Hx6TD_y3lHsnoc",
+            authDomain: "teuzin-apps.firebaseapp.com",
+            databaseURL: "https://teuzin-apps-default-rtdb.firebaseio.com",
+            projectId: "teuzin-apps",
+            storageBucket: "teuzin-apps.firebasestorage.app",
+            messagingSenderId: "695505471506",
+            appId: "1:695505471506:web:efe322e605af4a30bfb0cb",
+            measurementId: "G-TLJ87EYNFP"
         };
 
-        peerConnection.onicecandidate = event => {
-            if(event.candidate) {
-                roomRef.child('users').get().then(snapshot => {
-                    const users = snapshot.val() || {};
-                    const otherId = Object.keys(users).find(id => id !== myId);
-                    if(otherId) {
-                        roomRef.child(`signals/${otherId}`).push({ candidate: event.candidate, from: myId });
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let localStream = null;
+        let peerConnections = {};
+        let currentRoom = null;
+        let currentUser = null;
+        let userId = Math.random().toString(36).substring(2, 9);
+        let isMuted = false;
+
+        const rtcConfig = {
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        };
+
+        const screenLogin = document.getElementById("screenLogin");
+        const screenCall = document.getElementById("screenCall");
+        const controlsBar = document.getElementById("controlsBar");
+        const inputName = document.getElementById("inputName");
+        const inputRoom = document.getElementById("inputRoom");
+        const btnJoin = document.getElementById("btnJoin");
+        const btnHangup = document.getElementById("btnHangup");
+        const btnMute = document.getElementById("btnMute");
+        const btnBack = document.getElementById("btnBack");
+        const roomUser = document.getElementById("roomUser");
+        const callStatus = document.getElementById("callStatus");
+        const avatarLetter = document.getElementById("avatarLetter");
+        const participantsList = document.getElementById("participantsList");
+
+        btnJoin.addEventListener("click", joinRoom);
+        btnHangup.addEventListener("click", leaveRoom);
+        btnBack.addEventListener("click", leaveRoom);
+        btnMute.addEventListener("click", toggleMute);
+
+        async function joinRoom() {
+            const name = inputName.value.trim();
+            const room = inputRoom.value.trim();
+
+            if (!name || !room) {
+                alert("Preencha seu nome e a sala!");
+                return;
+            }
+
+            currentUser = name;
+            currentRoom = room;
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            } catch (err) {
+                alert("Permissão de áudio negada ou microfone indisponível.");
+                return;
+            }
+
+            screenLogin.classList.add("hidden");
+            screenCall.classList.remove("hidden");
+            controlsBar.classList.remove("invisible", "opacity-0", "translate-y-4");
+            btnBack.removeAttribute("disabled");
+
+            roomUser.textContent = currentRoom;
+            avatarLetter.textContent = currentUser.charAt(0).toUpperCase();
+            callStatus.textContent = "Entrando em contato...";
+
+            const userRef = ref(db, `rooms/${currentRoom}/users/${userId}`);
+            await set(userRef, { name: currentUser, id: userId });
+            onDisconnect(userRef).remove();
+
+            listenToRoom();
+            listenToSignals();
+        }
+
+        function listenToRoom() {
+            const usersRef = ref(db, `rooms/${currentRoom}/users`);
+            onValue(usersRef, (snapshot) => {
+                participantsList.innerHTML = "";
+                const data = snapshot.val() || {};
+                
+                let count = 0;
+                Object.keys(data).forEach(id => {
+                    count++;
+                    const p = document.createElement("span");
+                    p.className = "bg-white/10 text-xs px-3 py-1.5 rounded-full border border-white/5 flex items-center gap-1.5";
+                    p.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ${data[id].name}`;
+                    participantsList.appendChild(p);
+
+                    if (id !== userId && !peerConnections[id]) {
+                        initiateCall(id);
                     }
                 });
-            }
-        };
-    }
 
-    async function initiateCall(otherId) {
-        setupPeerConnection();
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-        roomRef.child(`signals/${otherId}`).push({ sdp: offer, from: myId });
-    }
-
-    function sendMessage() {
-        const text = chatInput.value.trim();
-        if(!text) return;
-        roomRef.child('messages').push({
-            senderId: myId,
-            senderName: myName,
-            text: text
-        });
-        chatInput.value = '';
-    }
-
-    btnSend.addEventListener('click', sendMessage);
-    chatInput.addEventListener('keypress', (e) => {
-        if(e.key === 'Enter') sendMessage();
-    });
-
-    btnMute.addEventListener('click', () => {
-        isMuted = !isMuted;
-        localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
-        btnMute.classList.toggle('muted', isMuted);
-        
-        const micIcon = document.getElementById('icon-mic');
-        if(isMuted) {
-            micIcon.style.opacity = '0.5';
-        } else {
-            micIcon.style.opacity = '1';
+                if(count > 1) {
+                    callStatus.textContent = "Em chamada";
+                } else {
+                    callStatus.textContent = "Aguardando participantes...";
+                }
+            });
         }
-    });
 
-    btnHangup.addEventListener('click', () => {
-        if(userRef) userRef.remove();
-        if(peerConnection) peerConnection.close();
-        if(localStream) localStream.getTracks().forEach(t => t.stop());
-        
-        window.location.reload();
-    });
-</script>
+        async function initiateCall(targetId) {
+            const pc = createPeerConnection(targetId);
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+            
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
 
+            await set(ref(db, `rooms/${currentRoom}/signals/${targetId}/${userId}`), {
+                type: "offer",
+                sdp: offer.sdp,
+                sender: userId
+            });
+        }
+
+        function createPeerConnection(targetId) {
+            const pc = new RTCPeerConnection(rtcConfig);
+            peerConnections[targetId] = pc;
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    set(ref(db, `rooms/${currentRoom}/ice/${targetId}/${userId}/${Date.now()}`), {
+                        candidate: JSON.stringify(event.candidate)
+                    });
+                }
+            };
+
+            pc.ontrack = (event) => {
+                let audioEl = document.getElementById(`audio_${targetId}`);
+                if (!audioEl) {
+                    audioEl = document.createElement("audio");
+                    audioEl.id = `audio_${targetId}`;
+                    audioEl.autoplay = true;
+                    document.body.appendChild(audioEl);
+                }
+                audioEl.srcObject = event.streams[0];
+            };
+
+            return pc;
+        }
+
+        function listenToSignals() {
+            const signalRef = ref(db, `rooms/${currentRoom}/signals/${userId}`);
+            onValue(signalRef, async (snapshot) => {
+                const signals = snapshot.val();
+                if (!signals) return;
+
+                for (let senderId in signals) {
+                    const signal = signals[senderId];
+                    let pc = peerConnections[senderId];
+
+                    if (signal.type === "offer") {
+                        pc = createPeerConnection(senderId);
+                        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+                        await pc.setRemoteDescription(new RTCSessionDescription(signal));
+                        const answer = await pc.createAnswer();
+                        await pc.setLocalDescription(answer);
+
+                        await set(ref(db, `rooms/${currentRoom}/signals/${senderId}/${userId}`), {
+                            type: "answer",
+                            sdp: answer.sdp,
+                            sender: userId
+                        });
+                        remove(ref(db, `rooms/${currentRoom}/signals/${userId}/${senderId}`));
+
+                    } else if (signal.type === "answer") {
+                        if (pc) {
+                            await pc.setRemoteDescription(new RTCSessionDescription(signal));
+                            remove(ref(db, `rooms/${currentRoom}/signals/${userId}/${senderId}`));
+                        }
+                    }
+                }
+            });
+
+            const iceRef = ref(db, `rooms/${currentRoom}/ice/${userId}`);
+            onValue(iceRef, async (snapshot) => {
+                const iceData = snapshot.val();
+                if (!iceData) return;
+
+                for (let senderId in iceData) {
+                    const pc = peerConnections[senderId];
+                    if (pc) {
+                        for (let key in iceData[senderId]) {
+                            const candidate = JSON.parse(iceData[senderId][key].candidate);
+                            try {
+                                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                            } catch(e){}
+                        }
+                        remove(ref(db, `rooms/${currentRoom}/ice/${userId}/${senderId}`));
+                    }
+                }
+            });
+        }
+
+        function toggleMute() {
+            if (!localStream) return;
+            isMuted = !isMuted;
+            localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+            
+            if (isMuted) {
+                btnMute.classList.add("bg-red-500/20", "text-red-400");
+                btnMute.innerHTML = `<i class="fa-solid fa-microphone-slash"></i>`;
+            } else {
+                btnMute.classList.remove("bg-red-500/20", "text-red-400");
+                btnMute.innerHTML = `<i class="fa-solid fa-microphone"></i>`;
+            }
+        }
+
+        async function leaveRoom() {
+            if (currentRoom && currentUser) {
+                await remove(ref(db, `rooms/${currentRoom}/users/${userId}`));
+                await remove(ref(db, `rooms/${currentRoom}/signals/${userId}`));
+                await remove(ref(db, `rooms/${currentRoom}/ice/${userId}`));
+            }
+
+            Object.keys(peerConnections).forEach(id => {
+                peerConnections[id].close();
+                const el = document.getElementById(`audio_${id}`);
+                if (el) el.remove();
+            });
+
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+
+            peerConnections = {};
+            localStream = null;
+            currentRoom = null;
+            currentUser = null;
+
+            controlsBar.classList.add("invisible", "opacity-0", "translate-y-4");
+            screenCall.classList.add("hidden");
+            screenLogin.classList.remove("hidden");
+            btnBack.setAttribute("disabled", "true");
+            participantsList.innerHTML = "";
+            
+            if(isMuted) toggleMute();
+        }
+    </script>
 </body>
 </html>
