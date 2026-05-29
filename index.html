@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>VibeCall | Premium Voice & Chat</title>
+    <title>VibeCall | Ultimate</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -13,6 +13,7 @@
             --accent: #4f46e5;
             --accent-hover: #6366f1;
             --success: #10b981;
+            --warning: #f59e0b;
             --danger: #ef4444;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
@@ -23,7 +24,7 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -40,33 +41,39 @@
 
         header {
             background-color: var(--bg-panel);
-            padding: 16px 20px;
+            padding: 14px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--border);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
             z-index: 10;
+            flex-shrink: 0;
         }
 
         .brand {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         .brand-logo {
-            width: 12px;
-            height: 12px;
-            background-color: var(--success);
+            width: 14px;
+            height: 14px;
+            background-color: var(--danger);
             border-radius: 50%;
-            box-shadow: 0 0 10px var(--success);
+            box-shadow: 0 0 10px var(--danger);
+            transition: all 0.5s ease;
         }
 
-        .brand-logo.searching {
-            background-color: var(--danger);
-            box-shadow: 0 0 10px var(--danger);
-            animation: pulse 1.5s infinite;
+        .brand-logo.one-user {
+            background-color: var(--warning);
+            box-shadow: 0 0 10px var(--warning);
+        }
+
+        .brand-logo.two-users {
+            background-color: var(--success);
+            box-shadow: 0 0 10px var(--success);
         }
 
         h1 {
@@ -100,37 +107,34 @@
             background: var(--border);
         }
 
-        .connection-status {
+        .setup-area {
             background-color: var(--bg-panel);
-            padding: 12px 20px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 15px;
             border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
         }
 
-        .status-line {
+        .setup-area.hidden {
+            display: none !important;
+        }
+
+        .status-box {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            background: var(--bg-main);
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
             font-size: 0.85rem;
-        }
-
-        .status-label {
-            color: var(--text-muted);
         }
 
         .status-value {
             font-weight: 600;
-            color: var(--text-main);
-            background: var(--bg-surface);
-            padding: 4px 8px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            max-width: 180px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            color: var(--accent-hover);
         }
 
         #chat-timeline {
@@ -148,16 +152,11 @@
             display: flex;
             flex-direction: column;
             max-width: 75%;
-            animation: fadeInMessage 0.25s ease-out forwards;
+            animation: fadeIn 0.2s ease-out forwards;
         }
 
-        .message-wrapper.outgoing {
-            align-self: flex-end;
-        }
-
-        .message-wrapper.incoming {
-            align-self: flex-start;
-        }
+        .message-wrapper.outgoing { align-self: flex-end; }
+        .message-wrapper.incoming { align-self: flex-start; }
 
         .message-box {
             padding: 12px 16px;
@@ -165,7 +164,6 @@
             font-size: 0.95rem;
             line-height: 1.4;
             word-break: break-word;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .outgoing .message-box {
@@ -188,9 +186,7 @@
             padding: 0 4px;
         }
 
-        .outgoing .message-meta {
-            align-self: flex-end;
-        }
+        .outgoing .message-meta { align-self: flex-end; }
 
         .system-notification {
             align-self: center;
@@ -200,20 +196,18 @@
             padding: 6px 16px;
             border-radius: 20px;
             font-size: 0.75rem;
-            font-weight: 500;
-            backdrop-filter: blur(4px);
             text-align: center;
-            margin: 8px 0;
+            margin: 4px 0;
         }
 
-        .interaction-panel {
+        .bottom-panel {
             background-color: var(--bg-panel);
             border-top: 1px solid var(--border);
             padding: 16px 20px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
-            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.3);
+            gap: 12px;
+            flex-shrink: 0;
         }
 
         .input-group {
@@ -223,11 +217,6 @@
             border-radius: 14px;
             padding: 4px;
             align-items: center;
-            transition: border-color 0.2s ease;
-        }
-
-        .input-group:focus-within {
-            border-color: var(--accent);
         }
 
         .app-input {
@@ -236,34 +225,24 @@
             border: none;
             outline: none;
             color: var(--text-main);
-            padding: 10px 12px;
+            padding: 12px;
             font-size: 0.95rem;
-        }
-
-        .app-input::placeholder {
-            color: var(--text-muted);
         }
 
         .submit-btn {
             background: var(--accent);
             color: white;
             border: none;
-            padding: 10px 16px;
+            padding: 10px 20px;
             border-radius: 10px;
             font-weight: 600;
-            font-size: 0.9rem;
             cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        .submit-btn:hover {
-            background: var(--accent-hover);
         }
 
         .action-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 10px;
         }
 
         .panel-btn {
@@ -274,61 +253,21 @@
             background: var(--bg-surface);
             border: 1px solid var(--border);
             color: var(--text-main);
-            padding: 14px;
+            padding: 12px;
             border-radius: 12px;
             font-weight: 600;
             font-size: 0.9rem;
             cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .panel-btn.primary {
-            background: var(--accent);
-            border-color: transparent;
-        }
-
-        .panel-btn.primary:hover {
-            background: var(--accent-hover);
-        }
-
-        .panel-btn.danger {
-            background: rgba(239, 68, 68, 0.15);
-            border-color: rgba(239, 68, 68, 0.3);
-            color: var(--danger);
         }
 
         .panel-btn.danger.active {
             background: var(--danger);
-            color: white;
             border-color: transparent;
-            box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
         }
 
-        .panel-btn:active {
-            transform: scale(0.97);
-        }
-
-        audio {
-            display: none;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.3); opacity: 0.5; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        @keyframes fadeInMessage {
-            from { opacity: 0; transform: translateY(8px); }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 3px;
         }
     </style>
 </head>
@@ -336,8 +275,8 @@
 
     <header>
         <div class="brand">
-            <div class="brand-logo" id="app-indicator"></div>
-            <h1>VibeCall</h1>
+            <div class="brand-logo" id="status-indicator"></div>
+            <h1 id="app-title">VibeCall</h1>
         </div>
         <div class="nav-actions">
             <button class="icon-btn" onclick="toggleFullscreen()">📺</button>
@@ -345,157 +284,133 @@
         </div>
     </header>
 
-    <div class="connection-status">
-        <div class="status-line">
-            <span class="status-label">Seu endereço de acesso (ID):</span>
-            <span class="status-value" id="display-my-id">Gerando...</span>
+    <div class="setup-area" id="setup-panel">
+        <div class="status-box">
+            <span>Seu ID desta sala:</span>
+            <span class="status-value" id="my-id-display">Gerando...</span>
         </div>
-        <div class="status-line">
-            <span class="status-label">Conexão atual:</span>
-            <span class="status-value" id="display-remote-status">Disponível</span>
-        </div>
-    </div>
-
-    <div id="chat-timeline">
-        <div class="system-notification">Permissão de áudio requerida para chamadas de voz.</div>
-    </div>
-
-    <div class="interaction-panel">
-        <div class="input-group" id="connection-form">
-            <input type="text" class="app-input" id="remote-peer-id" placeholder="Inserir ID do parceiro...">
-            <button class="submit-btn" onclick="initiateConnection()">Conectar</button>
-        </div>
-
-        <div class="action-grid">
-            <button class="panel-btn danger" id="mute-toggle-btn" onclick="handleMuteToggle()">
-                <span>🎙️</span> Microfone On
-            </button>
-            <button class="panel-btn" id="disconnect-btn" onclick="terminateSession()">
-                <span>❌</span> Desconectar
-            </button>
-        </div>
-
         <div class="input-group">
-            <input type="text" class="app-input" id="chat-message-input" placeholder="Digite uma mensagem..." onkeypress="checkSendKey(event)">
-            <button class="submit-btn" onclick="broadcastMessage()">Enviar</button>
+            <input type="text" class="app-input" id="target-id-input" placeholder="Colar ID do amigo para conectar...">
+            <button class="submit-btn" onclick="connectToRoom()">Conectar</button>
         </div>
     </div>
 
-    <audio id="remote-audio-player" autoplay></audio>
+    <div id="chat-timeline"></div>
+
+    <div class="bottom-panel">
+        <div class="input-group">
+            <input type="text" class="app-input" id="message-input" placeholder="Digite uma mensagem..." onkeypress="handleKeyPress(event)">
+            <button class="submit-btn" onclick="sendMessage()">Enviar</button>
+        </div>
+        <div class="action-grid">
+            <button class="panel-btn" id="mute-btn" onclick="toggleMic()">🎙️ Microfone On</button>
+            <button class="panel-btn" onclick="hangUp()">❌ Sair</button>
+        </div>
+    </div>
+
+    <audio id="remote-audio" autoplay></audio>
 
     <script>
-        const peerInstance = new Peer();
-        let dataChannel = null;
-        let voiceChannel = null;
-        let localCaptureStream = null;
+        const peer = new Peer();
+        let dataConn = null;
+        let audioCall = null;
+        let localStream = null;
 
         navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-            .then(stream => {
-                localCaptureStream = stream;
-                pushSystemLog("Microfone pronto para transmissão.");
+            .then(stream => { 
+                localStream = stream; 
+                updateStatusIndicator(1);
             })
-            .catch(err => {
-                pushSystemLog("Falha ao obter acesso ao microfone.");
-            });
+            .catch(() => { updateStatusIndicator(0); });
 
-        peerInstance.on('open', generatedId => {
-            document.getElementById('display-my-id').innerText = generatedId;
-            evaluateUrlParameters();
+        peer.on('open', id => {
+            document.getElementById('my-id-display').innerText = id;
+            checkUrlParams();
         });
 
-        peerInstance.on('connection', incomingConnection => {
-            dataChannel = incomingConnection;
-            bindDataEvents();
+        peer.on('connection', conn => {
+            dataConn = conn;
+            setupDataChannel();
         });
 
-        peerInstance.on('call', incomingVoiceCall => {
-            voiceChannel = incomingVoiceCall;
-            incomingVoiceCall.answer(localCaptureStream);
-            incomingVoiceCall.on('stream', remoteAudioStream => {
-                document.getElementById('remote-audio-player').srcObject = remoteAudioStream;
-                updateCallUI(true);
+        peer.on('call', call => {
+            audioCall = call;
+            call.answer(localStream);
+            call.on('stream', stream => {
+                document.getElementById('remote-audio').srcObject = stream;
+                enterActiveChatMode();
             });
         });
 
-        function evaluateUrlParameters() {
-            const queryParams = new URLSearchParams(window.location.search);
-            const targetId = queryParams.get('id');
-            if (targetId) {
-                document.getElementById('remote-peer-id').value = targetId;
-                pushSystemLog("ID detectado via link de convite.");
+        function checkUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const roomParam = params.get('id');
+            if (roomParam) {
+                document.getElementById('target-id-input').value = roomParam;
+                connectToRoom();
             }
         }
 
-        function initiateConnection() {
-            const targetPeerId = document.getElementById('remote-peer-id').value.trim();
-            if (!targetPeerId) return;
+        function connectToRoom() {
+            const targetId = document.getElementById('target-id-input').value.trim();
+            if (!targetId) return;
 
-            pushSystemLog("Iniciando canais de comunicação...");
-            document.getElementById('app-indicator').className = "brand-logo searching";
+            dataConn = peer.connect(targetId);
+            setupDataChannel();
 
-            dataChannel = peerInstance.connect(targetPeerId);
-            bindDataEvents();
-
-            if (localCaptureStream) {
-                voiceChannel = peerInstance.call(targetPeerId, localCaptureStream);
-                voiceChannel.on('stream', remoteAudioStream => {
-                    document.getElementById('remote-audio-player').srcObject = remoteAudioStream;
-                    updateCallUI(true);
+            if (localStream) {
+                audioCall = peer.call(targetId, localStream);
+                audioCall.on('stream', stream => {
+                    document.getElementById('remote-audio').srcObject = stream;
+                    enterActiveChatMode();
                 });
             }
         }
 
-        function bindDataEvents() {
-            dataChannel.on('open', () => {
-                pushSystemLog("Canal de dados criptografado estabelecido.");
-                document.getElementById('display-remote-status').innerText = "Conectado";
-                document.getElementById('app-indicator').className = "brand-logo";
+        function setupDataChannel() {
+            dataConn.on('open', () => {
+                enterActiveChatMode();
             });
 
-            dataChannel.on('data', rawPayload => {
-                renderMessageBubble(rawPayload, 'incoming');
+            dataConn.on('data', data => {
+                appendMessage(data, 'incoming');
             });
 
-            dataChannel.on('close', () => {
-                pushSystemLog("Conexão encerrada pelo usuário remoto.");
-                clearSessionStates();
+            dataConn.on('close', () => {
+                exitActiveChatMode();
             });
         }
 
-        function broadcastMessage() {
-            const messageInputField = document.getElementById('chat-message-input');
-            const messageBody = messageInputField.value.trim();
-            
-            if (!messageBody) return;
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
 
-            if (dataChannel && dataChannel.open) {
-                dataChannel.send(messageBody);
-                renderMessageBubble(messageBody, 'outgoing');
-                messageInputField.value = '';
-            } else {
-                pushSystemLog("Impossível enviar. Nenhuma conexão ativa.");
+            if (dataConn && dataConn.open) {
+                dataConn.send(text);
+                appendMessage(text, 'outgoing');
+                input.value = '';
             }
         }
 
-        function checkSendKey(event) {
-            if (event.key === 'Enter') {
-                broadcastMessage();
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
             }
         }
 
-        function renderMessageBubble(content, direction) {
+        function appendMessage(text, type) {
             const timeline = document.getElementById('chat-timeline');
             const wrapper = document.createElement('div');
-            wrapper.className = `message-wrapper ${direction}`;
+            wrapper.className = `message-wrapper ${type}`;
 
             const box = document.createElement('div');
             box.className = 'message-box';
-            box.innerText = content;
+            box.innerText = text;
 
             const meta = document.createElement('div');
             meta.className = 'message-meta';
-            const currentTime = new Date();
-            meta.innerText = currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            meta.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             wrapper.appendChild(box);
             wrapper.appendChild(meta);
@@ -503,65 +418,61 @@
             timeline.scrollTop = timeline.scrollHeight;
         }
 
-        function pushSystemLog(text) {
+        function updateStatusIndicator(usersCount) {
+            const ind = document.getElementById('status-indicator');
+            ind.className = 'brand-logo';
+            if (usersCount === 1) {
+                ind.classList.add('one-user');
+            } else if (usersCount === 2) {
+                ind.classList.add('two-users');
+            }
+        }
+
+        function enterActiveChatMode() {
+            document.getElementById('setup-panel').classList.add('hidden');
+            updateStatusIndicator(2);
             const timeline = document.getElementById('chat-timeline');
+            timeline.innerHTML = '';
             const notice = document.createElement('div');
             notice.className = 'system-notification';
-            notice.innerText = text;
+            notice.innerText = "Conexão estabelecida com sucesso.";
             timeline.appendChild(notice);
-            timeline.scrollTop = timeline.scrollHeight;
         }
 
-        function handleMuteToggle() {
-            if (!localCaptureStream) return;
-            const audioTracks = localCaptureStream.getAudioTracks();
-            if (audioTracks.length > 0) {
-                const isEnabled = audioTracks[0].enabled;
-                audioTracks[0].enabled = !isEnabled;
-                
-                const muteButton = document.getElementById('mute-toggle-btn');
-                if (audioTracks[0].enabled) {
-                    muteButton.className = "panel-btn danger";
-                    muteButton.innerHTML = "<span>🎙️</span> Microfone On";
-                } else {
-                    muteButton.className = "panel-btn danger active";
-                    muteButton.innerHTML = "<span>🔇</span> Mutado";
-                }
+        function exitActiveChatMode() {
+            document.getElementById('setup-panel').classList.remove('hidden');
+            updateStatusIndicator(1);
+            document.getElementById('remote-audio').srcObject = null;
+        }
+
+        function toggleMic() {
+            if (!localStream) return;
+            const audioTrack = localStream.getAudioTracks()[0];
+            audioTrack.enabled = !audioTrack.enabled;
+            
+            const btn = document.getElementById('mute-btn');
+            if (audioTrack.enabled) {
+                btn.className = "panel-btn";
+                btn.innerHTML = "🎙️ Microfone On";
+            } else {
+                btn.className = "panel-btn danger active";
+                btn.innerHTML = "🔇 Mutado";
             }
         }
 
-        function terminateSession() {
-            if (dataChannel) dataChannel.close();
-            if (voiceChannel) voiceChannel.close();
-            clearSessionStates();
-            pushSystemLog("Sessão finalizada localmente.");
-        }
-
-        function clearSessionStates() {
-            document.getElementById('display-remote-status').innerText = "Disponível";
-            document.getElementById('app-indicator').className = "brand-logo";
-            document.getElementById('remote-audio-player').srcObject = null;
-        }
-
-        function updateCallUI(state) {
-            if(state) {
-                document.getElementById('display-remote-status').innerText = "Em chamada de voz";
-            }
+        function hangUp() {
+            if (dataConn) dataConn.close();
+            if (audioCall) audioCall.close();
+            exitActiveChatMode();
         }
 
         function shareSession() {
-            if (!peerInstance.id) return;
-            const absoluteShareUrl = window.location.origin + window.location.pathname + "?id=" + peerInstance.id;
-            
+            if (!peer.id) return;
+            const shareUrl = window.location.origin + window.location.pathname + "?id=" + peer.id;
             if (navigator.share) {
-                navigator.share({
-                    title: 'VibeCall - Canal Privado',
-                    text: 'Entre na minha sala de voz privada e chat seguro.',
-                    url: absoluteShareUrl
-                }).catch(() => {});
+                navigator.share({ title: 'Entrar na Sala VibeCall', url: shareUrl }).catch(() => {});
             } else {
-                navigator.clipboard.writeText(absoluteShareUrl);
-                pushSystemLog("Link copiado para a área de transferência.");
+                navigator.clipboard.writeText(shareUrl);
             }
         }
 
